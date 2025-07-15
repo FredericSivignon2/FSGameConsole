@@ -1,0 +1,53 @@
+; Programme de démonstration pour FSGameConsole
+; Affiche "Hello World!" à l'écran
+
+    ; Charger 'H' (72) dans A et le stocker à l'adresse vidéo $F800
+    LDA #'H'
+    STA $F800
+
+    ; Charger 'e' (101) dans A et le stocker à $F801
+    LDA #'e'
+    STA $F801
+
+    ; Charger 'l' (108) dans A et le stocker à $F802
+    LDA #'l'
+    STA $F802
+
+    ; Charger 'l' (108) dans A et le stocker à $F803
+    LDA #'l'
+    STA $F803
+
+    ; Charger 'o' (111) dans A et le stocker à $F804
+    LDA #'o'
+    STA $F804
+
+    ; Charger ' ' (32) dans A et le stocker à $F805
+    LDA #' '
+    STA $F805
+
+    ; Charger 'W' (87) dans A et le stocker à $F806
+    LDA #'W'
+    STA $F806
+
+    ; Charger 'o' (111) dans A et le stocker à $F807
+    LDA #'o'
+    STA $F807
+
+    ; Charger 'r' (114) dans A et le stocker à $F808
+    LDA #'r'
+    STA $F808
+
+    ; Charger 'l' (108) dans A et le stocker à $F809
+    LDA #'l'
+    STA $F809
+
+    ; Charger 'd' (100) dans A et le stocker à $F80A
+    LDA #'d'
+    STA $F80A
+
+    ; Charger '!' (33) dans A et le stocker à $F80B
+    LDA #'!'
+    STA $F80B
+
+    ; Arrêter le programme
+    HALT

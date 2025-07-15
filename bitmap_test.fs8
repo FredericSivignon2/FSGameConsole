@@ -1,0 +1,180 @@
+; Programme de démonstration pour le nouveau mode bitmap
+; Teste l'écriture dans la nouvelle zone mémoire texte F000-F3E7
+; Ce programme affiche un message et quelques caractères de test
+
+; Afficher "BITMAP MODE!" en position (5, 5)
+; Calcul de l'adresse: F000 + (5 * 40) + 5 = F000 + 200 + 5 = F000 + 0xCD = F0CD
+
+; Position de départ: ligne 5, colonne 5
+; Adresse = F000 + (5 * 40) + 5 = F0CD
+
+; B
+LDA #'B'
+STA $F0CD
+
+; I  
+LDA #'I'
+STA $F0CE
+
+; T
+LDA #'T'
+STA $F0CF
+
+; M
+LDA #'M'
+STA $F0D0
+
+; A
+LDA #'A'
+STA $F0D1
+
+; P
+LDA #'P'
+STA $F0D2
+
+; (espace)
+LDA #' '
+STA $F0D3
+
+; M
+LDA #'M'
+STA $F0D4
+
+; O
+LDA #'O'
+STA $F0D5
+
+; D
+LDA #'D'
+STA $F0D6
+
+; E
+LDA #'E'
+STA $F0D7
+
+; !
+LDA #'!'
+STA $F0D8
+
+; Afficher "320x200 16 COLORS" en ligne 7
+; Adresse = F000 + (7 * 40) = F000 + 280 = F000 + 0x118 = F118
+
+; 3
+LDA #'3'
+STA $F118
+
+; 2
+LDA #'2'
+STA $F119
+
+; 0
+LDA #'0'
+STA $F11A
+
+; x
+LDA #'x'
+STA $F11B
+
+; 2
+LDA #'2'
+STA $F11C
+
+; 0
+LDA #'0'
+STA $F11D
+
+; 0
+LDA #'0'
+STA $F11E
+
+; (espace)
+LDA #' '
+STA $F11F
+
+; 1
+LDA #'1'
+STA $F120
+
+; 6
+LDA #'6'
+STA $F121
+
+; (espace)
+LDA #' '
+STA $F122
+
+; C
+LDA #'C'
+STA $F123
+
+; O
+LDA #'O'
+STA $F124
+
+; L
+LDA #'L'
+STA $F125
+
+; O
+LDA #'O'
+STA $F126
+
+; R
+LDA #'R'
+STA $F127
+
+; S
+LDA #'S'
+STA $F128
+
+; Afficher quelques caractères spéciaux en ligne 10
+; Adresse = F000 + (10 * 40) = F000 + 400 = F000 + 0x190 = F190
+
+; Caractères de 1 à 15 (symboles spéciaux)
+LDA #1
+STA $F190
+
+LDA #2  
+STA $F191
+
+LDA #3
+STA $F192
+
+LDA #4
+STA $F193
+
+LDA #5
+STA $F194
+
+LDA #6
+STA $F195
+
+LDA #7
+STA $F196
+
+LDA #8
+STA $F197
+
+LDA #9
+STA $F198
+
+LDA #10
+STA $F199
+
+LDA #11
+STA $F19A
+
+LDA #12
+STA $F19B
+
+LDA #13
+STA $F19C
+
+LDA #14
+STA $F19D
+
+LDA #15
+STA $F19E
+
+; Arrêter le programme
+HALT

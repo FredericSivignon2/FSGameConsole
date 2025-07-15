@@ -1,0 +1,5 @@
+; Test très simple
+LDA #42
+LDB #99
+CMP A,B
+HALT

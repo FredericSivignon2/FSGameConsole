@@ -1,0 +1,33 @@
+; Test simple des nouvelles instructions
+; Quelques instructions pour tester l'assembleur
+
+DEBUT:
+    ; Instructions de chargement immediate
+    LDA #42         ; LDA #imm - 0x10
+    LDB #99         ; LDB #imm - 0x11
+    
+    ; Instructions arithmétiques  
+    ADD             ; ADD A,B (implicite) - 0x20
+    SUB             ; SUB A,B (implicite) - 0x21
+    
+    ; Instructions 16 bits
+    ADD16           ; ADD16 DA,DB (implicite) - 0x22
+    
+    ; Instructions simples
+    INC A           ; INC A - 0x28
+    DEC A           ; DEC A - 0x29
+    
+    ; Comparaison
+    CMP A,B         ; CMP A,B - 0x2C
+    
+    ; Instructions logiques
+    AND A,B         ; AND A,B - 0x30
+    OR A,B          ; OR A,B - 0x31
+    XOR A,B         ; XOR A,B - 0x32
+    
+    ; Instructions de transfert
+    MOV A,B         ; MOV A,B - 0xA0
+    SWP A,B         ; SWP A,B - 0xA6
+    
+    ; Fin
+    HALT            ; HALT - 0x01

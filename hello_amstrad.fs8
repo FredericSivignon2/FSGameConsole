@@ -1,0 +1,60 @@
+; Programme simple pour tester le nouveau système bitmap
+; Affiche "HELLO AMSTRAD!" en première ligne
+
+; H
+LDA #'H'
+STA $F000
+
+; E
+LDA #'E'
+STA $F001
+
+; L
+LDA #'L'
+STA $F002
+
+; L
+LDA #'L'
+STA $F003
+
+; O
+LDA #'O'
+STA $F004
+
+; (espace)
+LDA #' '
+STA $F005
+
+; A
+LDA #'A'
+STA $F006
+
+; M
+LDA #'M'
+STA $F007
+
+; S
+LDA #'S'
+STA $F008
+
+; T
+LDA #'T'
+STA $F009
+
+; R
+LDA #'R'
+STA $F00A
+
+; A
+LDA #'A'
+STA $F00B
+
+; D
+LDA #'D'
+STA $F00C
+
+; !
+LDA #'!'
+STA $F00D
+
+HALT

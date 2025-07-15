@@ -1,0 +1,132 @@
+; Test comprehensive des nouvelles instructions FSAssembler
+; Tous les nouveaux opcodes ajoutés au processeur FS8
+
+DEBUT:
+    ; === Instructions de chargement 8 bits ===
+    LDA #42         ; LDA #imm - 0x10
+    LDB #99         ; LDB #imm - 0x11
+    LDC #128        ; LDC #imm - 0x12
+    LDD #255        ; LDD #imm - 0x13
+    LDE #16         ; LDE #imm - 0x14
+    LDF #32         ; LDF #imm - 0x15
+    
+    ; === Instructions de chargement mémoire 8 bits ===
+    LDA $2000       ; LDA addr - 0x80
+    LDB $2001       ; LDB addr - 0x81
+    LDC $2002       ; LDC addr - 0x82
+    LDD $2003       ; LDD addr - 0x83
+    LDE $2004       ; LDE addr - 0x84
+    LDF $2005       ; LDF addr - 0x85
+    
+    ; === Instructions de chargement 16 bits ===
+    LDDA #$1234     ; LDDA #imm16 - 0x16
+    LDDB #$5678     ; LDDB #imm16 - 0x17
+    LDDA $3000      ; LDDA addr - 0x18
+    LDDB $3002      ; LDDB addr - 0x19
+    
+    ; === Instructions arithmétiques 16 bits ===
+    ADD16 DA,DB     ; ADD16 DA,DB - 0x22
+    SUB16 DA,DB     ; SUB16 DA,DB - 0x23
+    INC16 DA        ; INC16 DA - 0x24
+    DEC16 DA        ; DEC16 DA - 0x25
+    INC16 DB        ; INC16 DB - 0x26
+    DEC16 DB        ; DEC16 DB - 0x27
+    
+    ; === Instructions arithmétiques 8 bits ===
+    INC A           ; INC A - 0x28
+    DEC A           ; DEC A - 0x29
+    INC B           ; INC B - 0x2A
+    DEC B           ; DEC B - 0x2B
+    CMP A,B         ; CMP A,B - 0x2C
+    INC C           ; INC C - 0x2D
+    DEC C           ; DEC C - 0x2E
+    CMP A,C         ; CMP A,C - 0x2F
+    
+    ; === Instructions logiques étendues ===
+    XOR A,B         ; XOR A,B - 0x32
+    NOT A           ; NOT A - 0x33
+    SHL A           ; SHL A - 0x34
+    SHR A           ; SHR A - 0x35
+    AND A,C         ; AND A,C - 0x36
+    OR A,C          ; OR A,C - 0x37
+    XOR A,C         ; XOR A,C - 0x38
+    SHL B           ; SHL B - 0x39
+    
+    ; === Instructions de saut conditionnel ===
+    JZ ZERO_BRANCH  ; JZ addr - 0x41
+    JNZ NONZERO_BRANCH ; JNZ addr - 0x42
+    JC CARRY_BRANCH ; JC addr - 0x43
+    JNC NOCARRY_BRANCH ; JNC addr - 0x44
+    JN NEG_BRANCH   ; JN addr - 0x45
+    JNN NONNEG_BRANCH ; JNN addr - 0x46
+    
+    ; === Instructions de stockage étendues ===
+    STB $4000       ; STB addr - 0x53
+    STC $4001       ; STC addr - 0x54
+    STD $4002       ; STD addr - 0x55
+    STDA $4003      ; STDA addr - 0x51
+    STDB $4005      ; STDB addr - 0x52
+    
+    ; === Instructions de pile ===
+    PUSH A          ; PUSH A - 0x70
+    POP A           ; POP A - 0x71
+    PUSH DA         ; PUSH16 DA - 0x72
+    POP DA          ; POP16 DA - 0x73
+    PUSH B          ; PUSH B - 0x74
+    POP B           ; POP B - 0x75
+    PUSH DB         ; PUSH16 DB - 0x76
+    POP DB          ; POP16 DB - 0x77
+    PUSH C          ; PUSH C - 0x78
+    POP C           ; POP C - 0x79
+    
+    ; === Instructions de transfert registre ===
+    MOV A,B         ; MOV A,B - 0xA0
+    MOV A,C         ; MOV A,C - 0xA1
+    MOV B,A         ; MOV B,A - 0xA2
+    MOV B,C         ; MOV B,C - 0xA3
+    MOV C,A         ; MOV C,A - 0xA4
+    MOV C,B         ; MOV C,B - 0xA5
+    SWP A,B         ; SWP A,B - 0xA6
+    SWP A,C         ; SWP A,C - 0xA7
+    
+    ; === Sauts relatifs ===
+LOOP:
+    DEC A           ; Décrémente A
+    JRZ +5          ; JRZ offset - 0xC1 (saut relatif si zéro)
+    JRNZ LOOP       ; JRNZ offset - 0xC2 (saut relatif si non-zéro)
+    JRC +2          ; JRC offset - 0xC3 (saut relatif si carry)
+    JR +3           ; JR offset - 0xC0 (saut relatif inconditionnel)
+    
+    ; === Instructions système ===
+    SYS             ; SYS - 0xF0
+    
+    ; === Branches pour tests ===
+ZERO_BRANCH:
+    NOP
+    JMP FIN
+    
+NONZERO_BRANCH:
+    NOP
+    JMP FIN
+    
+CARRY_BRANCH:
+    NOP
+    JMP FIN
+    
+NOCARRY_BRANCH:
+    NOP
+    JMP FIN
+    
+NEG_BRANCH:
+    NOP
+    JMP FIN
+    
+NONNEG_BRANCH:
+    NOP
+    JMP FIN
+    
+FIN:
+    HALT            ; Fin du programme
+    
+    ; === Zone de données ===
+    DB 0x01, 0x02, 0x03, 0x04  ; Données de test

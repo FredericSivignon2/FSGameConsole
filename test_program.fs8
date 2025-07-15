@@ -1,0 +1,67 @@
+; Programme de test simple pour FSGameConsole
+; Affiche "HELLO FSGameConsole!" dans la mémoire vidéo
+
+; Charger les caractères de "HELLO "
+LDA #'H'
+STA $F800    ; Position 0 de la mémoire vidéo
+
+LDA #'E'
+STA $F801    ; Position 1
+
+LDA #'L'
+STA $F802    ; Position 2
+
+LDA #'L'
+STA $F803    ; Position 3
+
+LDA #'O'
+STA $F804    ; Position 4
+
+LDA #' '
+STA $F805    ; Position 5 (espace)
+
+; Charger les caractères de "FSGameConsole!"
+LDA #'F'
+STA $F806    ; Position 6
+
+LDA #'S'
+STA $F807    ; Position 7
+
+LDA #'G'
+STA $F808    ; Position 8
+
+LDA #'a'
+STA $F809    ; Position 9
+
+LDA #'m'
+STA $F80A    ; Position 10
+
+LDA #'e'
+STA $F80B    ; Position 11
+
+LDA #'C'
+STA $F80C    ; Position 12
+
+LDA #'o'
+STA $F80D    ; Position 13
+
+LDA #'n'
+STA $F80E    ; Position 14
+
+LDA #'s'
+STA $F80F    ; Position 15
+
+LDA #'o'
+STA $F810    ; Position 16
+
+LDA #'l'
+STA $F811    ; Position 17
+
+LDA #'e'
+STA $F812    ; Position 18
+
+LDA #'!'
+STA $F813    ; Position 19
+
+; Arrêter le programme
+HALT

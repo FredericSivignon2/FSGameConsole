@@ -1,0 +1,33 @@
+; Programme de démonstration avec labels et boucle
+; Affiche "AAA" puis "BBB" puis "CCC" à l'écran
+
+DEBUT:
+    ; Afficher 3 'A' 
+    LDA #'A'
+    STA $F800
+    STA $F801
+    STA $F802
+
+    ; Afficher 3 'B'
+    LDA #'B'
+    STA $F803
+    STA $F804
+    STA $F805
+
+    ; Afficher 3 'C'
+    LDA #'C'
+    STA $F806
+    STA $F807
+    STA $F808
+
+    ; Exemple d'arithmétique
+    LDA #10      ; Charger 10 dans A
+    LDB #5       ; Charger 5 dans B
+    ADD A,B      ; A = A + B = 15
+    STA $F80A    ; Stocker le résultat (15 = caractère SI)
+
+    ; Saut infini (pour maintenir le programme en vie)
+    JMP FIN
+
+FIN:
+    HALT
