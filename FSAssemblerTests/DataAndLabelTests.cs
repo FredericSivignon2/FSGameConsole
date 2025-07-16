@@ -238,7 +238,7 @@ namespace FSAssemblerTests
 
             // Assert
             result.Should().NotBeNull();
-            result.Should().HaveCount(9);
+            result.Should().HaveCount(10);
             
             // START: JMP MIDDLE
             result[0].Should().Be(0x40); // JMP
@@ -290,14 +290,14 @@ namespace FSAssemblerTests
         public void ComplexProgram_WithDataAndLabels_ShouldAssembleCorrectly()
         {
             // Arrange
-            string[] lines = 
-            {
-                "START:",
-                "LDA #10",
-                "STA DATA",
-                "JMP END",
-                "DATA:",
-                "DB 0, 0, 0",
+            string[] lines =
+            {                   // pos  size
+                "START:",       //  -    0   
+                "LDA #10",      //  0    2   
+                "STA DATA",     //  2    3   
+                "JMP END",      //  5    3   
+                "DATA:",        //  8    0   
+                "DB 0, 0, 0",   //  8    3   
                 "END:",
                 "HALT"
             };
@@ -307,7 +307,7 @@ namespace FSAssemblerTests
 
             // Assert
             result.Should().NotBeNull();
-            result.Should().HaveCount(11);
+            result.Should().HaveCount(12);
             
             // START: LDA #10
             result[0].Should().Be(0x10); // LDA opcode
@@ -315,12 +315,12 @@ namespace FSAssemblerTests
             
             // STA DATA
             result[2].Should().Be(0x50); // STA opcode
-            result[3].Should().Be(0x07); // DATA address (7)
+            result[3].Should().Be(0x08); // DATA address (8)
             result[4].Should().Be(0x00);
             
             // JMP END
             result[5].Should().Be(0x40); // JMP opcode
-            result[6].Should().Be(0x0A); // END address (10)
+            result[6].Should().Be(0x0B); // END address (11)
             result[7].Should().Be(0x00);
             
             // DATA: DB 0, 0, 0
@@ -350,7 +350,7 @@ namespace FSAssemblerTests
 
             // Assert
             result.Should().NotBeNull();
-            result.Should().HaveCount(12);
+            result.Should().HaveCount(13);
             
             // JMP MAIN
             result[0].Should().Be(0x40); // JMP
@@ -486,28 +486,28 @@ namespace FSAssemblerTests
         [Fact]
         public void LargeProgram_WithAllFeatures_ShouldAssembleCorrectly()
         {
-            // Arrange
+            // Arrange - Complete program demonstrating all features
             string[] lines = 
-            {
+            {                                       // pos  size
                 "; Simple program demonstrating all features",
-                "MAIN:",
-                "LDA #65",           // Load 'A'
-                "STA MESSAGE",       // Store at MESSAGE
-                "CALL PRINT_CHAR",   // Call subroutine
-                "HALT",              // End program
+                "MAIN:",                            //  -    0   Label
+                "LDA #65",                          //  0    2   Load 'A' character
+                "STA MESSAGE",                      //  2    3   Store at MESSAGE
+                "CALL PRINT_CHAR",                  //  5    3   Call subroutine
+                "HALT",                             //  8    1   End program
                 "",
-                "MESSAGE:",
-                "DB 0",              // Space for character
+                "MESSAGE:",                         //  -    0   Label (position 9)
+                "DB 0",                             //  9    1   Space for character
                 "",
-                "PRINT_CHAR:",       // Subroutine
-                "PUSH A",            // Save A
-                "LDA MESSAGE",       // Load character
-                "NOP",               // Simulate printing
-                "POP A",             // Restore A
-                "RET",               // Return
+                "PRINT_CHAR:",                      //  -    0   Label (position 10)
+                "PUSH A",                           // 10    1   Save A
+                "LDA MESSAGE",                      // 11    3   Load character
+                "NOP",                              // 14    1   Simulate printing
+                "POP A",                            // 15    1   Restore A
+                "RET",                              // 16    1   Return
                 "",
-                "DATA:",
-                "DB 'H', 'e', 'l', 'l', 'o', 0"
+                "DATA:",                            //  -    0   Label (position 17)
+                "DB 'H', 'e', 'l', 'l', 'o', 0"   // 17    6   String data
             };
 
             // Act
@@ -515,15 +515,38 @@ namespace FSAssemblerTests
 
             // Assert
             result.Should().NotBeNull();
-            result.Should().HaveCount(24);
+            result.Should().HaveCount(23);  // Total: 2+3+3+1+1+1+3+1+1+1+6 = 23 bytes
             
-            // Verify first few instructions
+            // Verify main function
             result[0].Should().Be(0x10); // LDA #65
             result[1].Should().Be(65);
             result[2].Should().Be(0x50); // STA MESSAGE
+            result[3].Should().Be(0x09); // MESSAGE address (9)
+            result[4].Should().Be(0x00);
+            result[5].Should().Be(0x60); // CALL
+            result[6].Should().Be(0x0A); // PRINT_CHAR address (10)
+            result[7].Should().Be(0x00);
+            result[8].Should().Be(0x01); // HALT
             
-            // The rest would be complex to verify completely,
-            // but this shows the assembler can handle a real program
+            // Verify MESSAGE location
+            result[9].Should().Be(0);    // MESSAGE data
+            
+            // Verify PRINT_CHAR subroutine
+            result[10].Should().Be(0x70); // PUSH A
+            result[11].Should().Be(0x80); // LDA MESSAGE (memory mode)
+            result[12].Should().Be(0x09); // MESSAGE address (9)
+            result[13].Should().Be(0x00);
+            result[14].Should().Be(0x00); // NOP
+            result[15].Should().Be(0x71); // POP A
+            result[16].Should().Be(0x61); // RET
+            
+            // Verify DATA section
+            result[17].Should().Be(72);   // 'H'
+            result[18].Should().Be(101);  // 'e'
+            result[19].Should().Be(108);  // 'l'
+            result[20].Should().Be(108);  // 'l'
+            result[21].Should().Be(111);  // 'o'
+            result[22].Should().Be(0);    // null terminator
         }
 
         #endregion

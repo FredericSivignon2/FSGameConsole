@@ -378,6 +378,7 @@ namespace FSAssemblerTests
             // Act & Assert
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
+                  .WithInnerException<AssemblerException>()
                   .WithMessage("*requires an address*");
         }
 
@@ -390,6 +391,7 @@ namespace FSAssemblerTests
             // Act & Assert
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
+                  .WithInnerException<AssemblerException>()
                   .WithMessage("*requires two registers*");
         }
 
@@ -402,7 +404,8 @@ namespace FSAssemblerTests
             // Act & Assert
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
-                  .WithMessage("*format: MOV dst,src*");
+                  .WithInnerException<AssemblerException>()
+                  .WithMessage("*MOV instruction requires two registers*");
         }
 
         [Fact]
@@ -414,6 +417,7 @@ namespace FSAssemblerTests
             // Act & Assert
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
+                  .WithInnerException<AssemblerException>()
                   .WithMessage("*Invalid MOV registers*");
         }
 
@@ -426,6 +430,7 @@ namespace FSAssemblerTests
             // Act & Assert
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
+                  .WithInnerException<AssemblerException>()
                   .WithMessage("*requires two registers*");
         }
 
@@ -438,7 +443,8 @@ namespace FSAssemblerTests
             // Act & Assert
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
-                  .WithMessage("*format: SWP A,B*");
+                  .WithInnerException<AssemblerException>()
+                  .WithMessage("*SWP instruction requires two registers*");
         }
 
         [Fact]
@@ -450,6 +456,7 @@ namespace FSAssemblerTests
             // Act & Assert
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
+                  .WithInnerException<AssemblerException>()
                   .WithMessage("*only A,B and A,C supported*");
         }
 

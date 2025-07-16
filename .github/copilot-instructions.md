@@ -327,6 +327,33 @@ La suite de tests **FSCPUTests** contient **116+ tests** couvrant :
 ### Bonnes pratiques :
 
 - **Tests unitaires** : Couverture >95%
+  Une chose à faire assez importante quand tu créés du code assembleur (pour les tests unitaires par exemple). Il faut bien indiquer la position en mémoire de chaque
+  instruction assembleur. En suivant le même formattage que l'exemple suivant :
+  
+  string[] lines = 
+	{                     // pos  size
+		"START:",         //  -    0   Label
+		"JMP FORWARD1",   //  0    3   Forward reference
+		"",
+		"BACK1:",         //  -    0   Label (position 3)
+		"JMP FORWARD2",   //  3    3   Forward reference
+		"NOP",            //  6    1   
+		"",
+		"BACK2:",         //  -    0   Label (position 7)
+		"JMP END",        //  7    3   Forward reference
+		"",
+		"FORWARD1:",      //  -    0   Label (position 10)
+		"JMP BACK1",      // 10    3   Backward reference
+		"",
+		"FORWARD2:",      //  -    0   Label (position 13)
+		"JMP BACK2",      // 13    3   Backward reference
+		"",
+		"END:",           //  -    0   Label (position 16)
+		"HALT"            // 16    1   Halt
+	};
+	
+	Grâce à cela, il est beaucoup plus simple de debugger les tests ou de modifier le code.
+  
 - **Documentation** : Commentaires XML complets
 - **Separation of concerns** : Responsabilités bien définies
 - **Disposal pattern** : Nettoyage des ressources
@@ -334,11 +361,11 @@ La suite de tests **FSCPUTests** contient **116+ tests** couvrant :
 
 Cette architecture offre une base solide pour un émulateur vintage performant et extensible, avec un timing authentique et une excellente couverture de tests.
 
+## Exemple de l'Amstrad CPC
+
 Pour te donner un peu de contexte et des exemples concrets, voici le contenu du livre "la bible du programmeur de l'amstrad CPC". Notre processeur virtuel n'est pas identique au Z80 de l'Amstrad. Donc, il ne faudra pas, dans tes suggestions, vouloir faire "comme le Z80" pour m'aider par exemple à écrire du code assembleur.
 Il faudra toujours bien prendre en compte les spécificités de notre processeur virtuel FS8. Par contre, des astuces d'optimisation, des exemples divers et variés issus du Z80, peuvent nous aider à améliorer notre propre code assembleur, surtout dans la création de notre ROM qui est quasi vierge actuellement.
 Voici donc le contenu du livre en intégralité :
-
-
 
 INTRODUCTION
 
@@ -26232,7 +26259,7 @@ JUUJUUUU
 
 (XX EEE
 sens
-BEBE \
+BEBE
 SEE | X 1)
 BEBE \ 1]
 

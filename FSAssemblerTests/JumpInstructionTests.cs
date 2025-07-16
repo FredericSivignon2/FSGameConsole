@@ -314,13 +314,13 @@ namespace FSAssemblerTests
         public void JR_WithLabel_ShouldCalculateRelativeOffset()
         {
             // Arrange
-            string[] lines = 
-            {
-                "START:",
-                "JR FORWARD",  // At address 0, target at 4 -> offset = 4 - (0 + 2) = 2
-                "NOP",
-                "FORWARD:",
-                "HALT"
+            string[] lines =
+            {                   // pos  size
+                "START:",       //  -    0   
+                "JR FORWARD",   //  0    2   
+                "NOP",          //  2    1   
+                "FORWARD:",     //  3    0   
+                "HALT"          //  3    1
             };
 
             // Act
@@ -330,7 +330,7 @@ namespace FSAssemblerTests
             result.Should().NotBeNull();
             result.Should().HaveCount(4);
             result[0].Should().Be(0xC0); // JR opcode
-            result[1].Should().Be(2);    // Relative offset
+            result[1].Should().Be(1);    // Relative offset
             result[2].Should().Be(0x00); // NOP
             result[3].Should().Be(0x01); // HALT
         }
@@ -342,8 +342,8 @@ namespace FSAssemblerTests
             string[] lines = 
             {
                 "LOOP:",         // At address 0
-                "NOP",          // At address 1
-                "JR LOOP"       // At address 2, target at 0 -> offset = 0 - (2 + 2) = -4
+                "NOP",          // At address 1 (1 byte)
+                "JR LOOP"       // At address 1, target at 0 -> offset = 0 - (1 + 2) = -3
             };
 
             // Act
@@ -351,10 +351,10 @@ namespace FSAssemblerTests
 
             // Assert
             result.Should().NotBeNull();
-            result.Should().HaveCount(4);
+            result.Should().HaveCount(3);
             result[0].Should().Be(0x00); // NOP
             result[1].Should().Be(0xC0); // JR opcode
-            result[2].Should().Be(252);  // -4 as signed byte (256-4)
+            result[2].Should().Be(253);  // -3 as signed byte (256-3)
         }
 
         #endregion
@@ -370,6 +370,7 @@ namespace FSAssemblerTests
             // Act & Assert
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
+                  .WithInnerException<AssemblerException>()
                   .WithMessage("*requires an address*");
         }
 
@@ -382,6 +383,7 @@ namespace FSAssemblerTests
             // Act & Assert
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
+                  .WithInnerException<AssemblerException>()
                   .WithMessage("*requires an offset*");
         }
 
@@ -394,6 +396,7 @@ namespace FSAssemblerTests
             // Act & Assert
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
+                  .WithInnerException<AssemblerException>()
                   .WithMessage("*offset out of range*");
         }
 
@@ -406,6 +409,7 @@ namespace FSAssemblerTests
             // Act & Assert
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
+                  .WithInnerException<AssemblerException>()
                   .WithMessage("*offset out of range*");
         }
 
@@ -430,6 +434,7 @@ namespace FSAssemblerTests
             // Act & Assert
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
+                  .WithInnerException<AssemblerException>()
                   .WithMessage("*Undefined label*");
         }
 

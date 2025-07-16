@@ -299,13 +299,45 @@ public static class InstructionCycles
             0x78 => PUSH,       // Empile C
             0x79 => POP,        // Dépile C
             
-            // Chargements de mémoire (0x80-0x85)
+            // Index register instructions
+            0x7A => 3,          // LDIDX1 #imm16 - 3 cycles
+            0x7B => 3,          // LDIDX2 #imm16 - 3 cycles
+            0x7C => 3,          // LDIDY1 #imm16 - 3 cycles
+            0x7D => 3,          // LDIDY2 #imm16 - 3 cycles
+            0x7E => 2,          // INCIDX1 - 2 cycles (16-bit operation)
+            0x7F => 2,          // DECIDX1 - 2 cycles
+            
+            // Chargements de mémoire (0x80-0x8F)
             0x80 => LDA_MEM,    // LDA addr - 4 cycles (opcode + addr + lecture)
             0x81 => LDB_MEM,    // LDB addr - 4 cycles
             0x82 => LDC_MEM,    // LDC addr - 4 cycles
             0x83 => LDD_MEM,    // LDD addr - 4 cycles
             0x84 => LDE_MEM,    // LDE addr - 4 cycles
             0x85 => LDF_MEM,    // LDF addr - 4 cycles
+            0x86 => 2,          // INCIDX2 - 2 cycles
+            0x87 => 2,          // DECIDX2 - 2 cycles
+            0x88 => 2,          // INCIDY1 - 2 cycles
+            0x89 => 2,          // DECIDY1 - 2 cycles
+            0x8A => 2,          // INCIDY2 - 2 cycles
+            0x8B => 2,          // DECIDY2 - 2 cycles
+            0x8C => 2,          // LDA (IDX1) - 2 cycles (indexed load)
+            0x8D => 2,          // LDA (IDX2) - 2 cycles
+            0x8E => 2,          // LDA (IDY1) - 2 cycles
+            0x8F => 2,          // LDA (IDY2) - 2 cycles
+            
+            // Indexed store operations (0x90-0x9B)
+            0x90 => 2,          // STA (IDX1) - 2 cycles (indexed store)
+            0x91 => 2,          // STA (IDX2) - 2 cycles
+            0x92 => 2,          // STA (IDY1) - 2 cycles
+            0x93 => 2,          // STA (IDY2) - 2 cycles
+            0x94 => 3,          // PUSHIDX1 - 3 cycles (16-bit push)
+            0x95 => 3,          // POPIDX1 - 3 cycles (16-bit pop)
+            0x96 => 3,          // PUSHIDX2 - 3 cycles
+            0x97 => 3,          // POPIDX2 - 3 cycles
+            0x98 => 3,          // PUSHIDY1 - 3 cycles
+            0x99 => 3,          // POPIDY1 - 3 cycles
+            0x9A => 3,          // PUSHIDY2 - 3 cycles
+            0x9B => 3,          // POPIDY2 - 3 cycles
             
             // Transferts entre registres (0xA0-0xA7)
             0xA0 => MOV_AB,     // MOV A,B - 1 cycle (registres internes)

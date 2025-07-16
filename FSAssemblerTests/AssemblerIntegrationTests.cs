@@ -150,9 +150,9 @@ namespace FSAssemblerTests
             
             // Verify subroutine exists
             result[11].Should().Be(0x78); // PUSH C
-            result[12].Should().Be(0xA5); // MOV C,A
-            result[13].Should().Be(0xA3); // MOV A,B
-            result[14].Should().Be(0xA8); // MOV B,C
+            result[12].Should().Be(0xA4); // MOV C,A
+            result[13].Should().Be(0xA0); // MOV A,B
+            result[14].Should().Be(0xA3); // MOV B,C
             result[15].Should().Be(0x20); // ADD
             result[16].Should().Be(0x79); // POP C
             result[17].Should().Be(0x61); // RET
@@ -280,26 +280,26 @@ namespace FSAssemblerTests
         {
             // Arrange - Copy data from one location to another
             string[] lines = 
-            {                     // pos  size
-                "MAIN:",          //  -    0   Label
-                "LDDA #SOURCE",   //  0    3   Load source address
-                "LDDB #DEST",     //  3    3   Load destination address
-                "LDC #5",         //  6    2   Load count
+            {                               // pos  size
+                "MAIN:",                    //  -    0   Label
+                "LDDA #22",                 //  0    3   Load source address (22 is SOURCE position)
+                "LDDB #27",                 //  3    3   Load destination address (27 is DEST position)
+                "LDC #5",                   //  6    2   Load count
                 "",
-                "COPY_LOOP:",     //  -    0   Label (position 8)
-                "LDA SOURCE",     //  8    3   This is simplified - real version would use DA/DB
-                "STA DEST",       // 11    3   This is simplified - real version would use DA/DB
-                "DEC C",          // 14    1   Decrement counter
-                "JZ COPY_DONE",   // 15    3   Exit if done
-                "JMP COPY_LOOP",  // 18    3   Continue loop
+                "COPY_LOOP:",               //  -    0   Label (position 8)
+                "LDA SOURCE",               //  8    3   This is simplified - real version would use DA/DB
+                "STA DEST",                 // 11    3   This is simplified - real version would use DA/DB
+                "DEC C",                    // 14    1   Decrement counter
+                "JZ COPY_DONE",             // 15    3   Exit if done
+                "JMP COPY_LOOP",            // 18    3   Continue loop
                 "",
-                "COPY_DONE:",     //  -    0   Label (position 21)
-                "HALT",           // 21    1   Halt
+                "COPY_DONE:",               //  -    0   Label (position 21)
+                "HALT",                     // 21    1   Halt
                 "",
-                "SOURCE:",        //  -    0   Label (position 22)
-                "DB 1, 2, 3, 4, 5",      // 22    5   Source data
-                "DEST:",          //  -    0   Label (position 27)
-                "DB 0, 0, 0, 0, 0"       // 27    5   Destination space
+                "SOURCE:",                  //  -    0   Label (position 22)
+                "DB 1, 2, 3, 4, 5",         // 22    5   Source data
+                "DEST:",                    //  -    0   Label (position 27)
+                "DB 0, 0, 0, 0, 0"          // 27    5   Destination space
             };
 
             // Act

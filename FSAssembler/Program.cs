@@ -873,12 +873,7 @@ public class Assembler
     {
         address = address.Trim();
 
-        if (!char.IsDigit(address[0]) && !address.StartsWith("0x") && !address.StartsWith("$"))
-        {
-            _unresolvedReferences.Add((currentAddress + 1, address));
-            return 0;
-        }
-
+        // Check if it's a numeric value (hex or decimal)
         if (address.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
         {
             return Convert.ToUInt16(address.Substring(2), 16);
@@ -889,7 +884,16 @@ public class Assembler
             return Convert.ToUInt16(address.Substring(1), 16);
         }
 
-        return Convert.ToUInt16(address);
+        // Check if it's a decimal number
+        if (char.IsDigit(address[0]))
+        {
+            return Convert.ToUInt16(address);
+        }
+
+        // If it's not a numeric value, it must be a label
+        // Add to unresolved references for later resolution
+        _unresolvedReferences.Add((currentAddress + 1, address));
+        return 0;
     }
 
     private sbyte ParseRelativeOffset(string offsetStr, ushort currentAddress)

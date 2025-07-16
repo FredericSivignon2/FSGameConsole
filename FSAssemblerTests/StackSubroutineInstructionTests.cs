@@ -279,16 +279,16 @@ namespace FSAssemblerTests
             // Arrange
             string[] lines = 
             {
-                "MAIN:",
-                "PUSH A",
-                "CALL FUNC",
-                "POP A",
-                "HALT",
-                "FUNC:",
-                "PUSH B",
-                "NOP",
-                "POP B",
-                "RET"
+                "MAIN:",         //   -    0   Label
+                "PUSH A",        //   0    1   PUSH A
+                "CALL FUNC",     //   1    3   CALL FUNC
+                "POP A",         //   4    1   POP A
+                "HALT",          //   5    1   HALT
+                "FUNC:",         //   -    0   Label (position 6)
+                "PUSH B",        //   6    1   PUSH B
+                "NOP",           //   7    1   NOP
+                "POP B",         //   8    1   POP B
+                "RET"            //   9    1   RET
             };
 
             // Act
@@ -296,17 +296,23 @@ namespace FSAssemblerTests
 
             // Assert
             result.Should().NotBeNull();
-            result.Should().HaveCount(9);
-            result[0].Should().Be(0x70); // PUSH A
-            result[1].Should().Be(0x60); // CALL opcode
-            result[2].Should().Be(0x05); // Low byte of FUNC address (5)
-            result[3].Should().Be(0x00); // High byte of FUNC address
-            result[4].Should().Be(0x71); // POP A
-            result[5].Should().Be(0x01); // HALT
-            result[6].Should().Be(0x74); // PUSH B (at FUNC)
-            result[7].Should().Be(0x00); // NOP
-            result[8].Should().Be(0x75); // POP B
-            // Note: Missing RET in this test - let's add it in the next assertion
+            result.Should().HaveCount(10);
+            //   0    1   PUSH A
+            result[0].Should().Be(0x70);
+            //   1    3   CALL FUNC
+            result[1].Should().Be(0x60); result[2].Should().Be(0x06); result[3].Should().Be(0x00);
+            //   4    1   POP A
+            result[4].Should().Be(0x71);
+            //   5    1   HALT
+            result[5].Should().Be(0x01);
+            //   6    1   PUSH B (at FUNC)
+            result[6].Should().Be(0x74);
+            //   7    1   NOP
+            result[7].Should().Be(0x00);
+            //   8    1   POP B
+            result[8].Should().Be(0x75);
+            //   9    1   RET
+            result[9].Should().Be(0x61);
         }
 
         #endregion
@@ -376,6 +382,7 @@ namespace FSAssemblerTests
             // Act & Assert
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
+                  .WithInnerException<AssemblerException>()
                   .WithMessage("*requires a register*");
         }
 
@@ -388,6 +395,7 @@ namespace FSAssemblerTests
             // Act & Assert
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
+                  .WithInnerException<AssemblerException>()
                   .WithMessage("*requires a register*");
         }
 
@@ -400,6 +408,7 @@ namespace FSAssemblerTests
             // Act & Assert
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
+                  .WithInnerException<AssemblerException>()
                   .WithMessage("*Invalid PUSH register*");
         }
 
@@ -412,6 +421,7 @@ namespace FSAssemblerTests
             // Act & Assert
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
+                  .WithInnerException<AssemblerException>()
                   .WithMessage("*Invalid POP register*");
         }
 
@@ -424,6 +434,7 @@ namespace FSAssemblerTests
             // Act & Assert
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
+                  .WithInnerException<AssemblerException>()
                   .WithMessage("*requires an address*");
         }
 
@@ -436,6 +447,7 @@ namespace FSAssemblerTests
             // Act & Assert
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
+                  .WithInnerException<AssemblerException>()
                   .WithMessage("*takes no parameters*");
         }
 
@@ -495,16 +507,16 @@ namespace FSAssemblerTests
             // Arrange
             string[] lines = 
             {
-                "CALL FUNC1",
-                "HALT",
-                "FUNC1:",
-                "PUSH A",
-                "CALL FUNC2",
-                "POP A",
-                "RET",
-                "FUNC2:",
-                "NOP",
-                "RET"
+                "CALL FUNC1",    //   0    3   CALL FUNC1
+                "HALT",          //   3    1   HALT
+                "FUNC1:",        //   -    0   Label (position 4)
+                "PUSH A",        //   4    1   PUSH A
+                "CALL FUNC2",    //   5    3   CALL FUNC2
+                "POP A",         //   8    1   POP A
+                "RET",           //   9    1   RET
+                "FUNC2:",        //   -    0   Label (position 10)
+                "NOP",           //  10    1   NOP
+                "RET"            //  11    1   RET
             };
 
             // Act
@@ -512,27 +524,23 @@ namespace FSAssemblerTests
 
             // Assert
             result.Should().NotBeNull();
-            result.Should().HaveCount(10);
-            
-            // Main: CALL FUNC1
-            result[0].Should().Be(0x60); // CALL
-            result[1].Should().Be(0x04); // Low byte of FUNC1 address (4)
-            result[2].Should().Be(0x00); // High byte
-            
-            // Main: HALT
+            result.Should().HaveCount(12);
+            //   0    3   CALL FUNC1
+            result[0].Should().Be(0x60); result[1].Should().Be(0x04); result[2].Should().Be(0x00);
+            //   3    1   HALT
             result[3].Should().Be(0x01);
-            
-            // FUNC1: PUSH A
+            //   4    1   PUSH A
             result[4].Should().Be(0x70);
-            
-            // FUNC1: CALL FUNC2
-            result[5].Should().Be(0x60); // CALL
-            result[6].Should().Be(0x09); // Low byte of FUNC2 address (9)
-            result[7].Should().Be(0x00); // High byte
-            
-            // FUNC1: POP A, RET
-            result[8].Should().Be(0x71); // POP A
-            // Missing RET at position 9
+            //   5    3   CALL FUNC2
+            result[5].Should().Be(0x60); result[6].Should().Be(0x0A); result[7].Should().Be(0x00);
+            //   8    1   POP A
+            result[8].Should().Be(0x71);
+            //   9    1   RET
+            result[9].Should().Be(0x61);
+            //  10    1   NOP (at FUNC2)
+            result[10].Should().Be(0x00);
+            //  11    1   RET
+            result[11].Should().Be(0x61);
         }
 
         #endregion

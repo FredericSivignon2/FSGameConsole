@@ -500,18 +500,18 @@ namespace FSAssemblerTests
             string[] lines = 
             {
                 "; Simple program demonstrating various instructions",
-                "MAIN:",
-                "LDA #10",        // Load immediate
-                "STA 0x8000",     // Store to memory
-                "PUSH A",         // Push to stack
-                "CALL SUBROUTINE",// Call subroutine
-                "POP A",          // Pop from stack
-                "HALT",           // End program
-                "",
-                "SUBROUTINE:",
-                "LDB #20",        // Load another value
-                "MOV A,B",        // Transfer register
-                "RET"             // Return from subroutine
+                "MAIN:",                //   -    0   Label
+                "LDA #10",              //   0    2   LDA #10
+                "STA 0x8000",           //   2    3   STA 0x8000
+                "PUSH A",               //   5    1   PUSH A
+                "CALL SUBROUTINE",      //   6    3   CALL SUBROUTINE (address 10)
+                "POP A",                //   9    1   POP A
+                "HALT",                 //  10    1   HALT
+                "",                     //  ---   0   (empty)
+                "SUBROUTINE:",          //  ---   0   Label (position 11)
+                "LDB #20",              //  11    2   LDB #20
+                "MOV A,B",              //  13    1   MOV A,B
+                "RET"                   //  14    1   RET
             };
 
             // Act
@@ -519,27 +519,20 @@ namespace FSAssemblerTests
 
             // Assert
             result.Should().NotBeNull();
-            result.Should().HaveCount(12);
-            
-            // LDA #10
+            result.Should().HaveCount(15);
+            //  0    2   LDA #10
             result[0].Should().Be(0x10); result[1].Should().Be(10);
-            
-            // STA 0x8000
+            //  2    3   STA 0x8000
             result[2].Should().Be(0x50); result[3].Should().Be(0x00); result[4].Should().Be(0x80);
-            
-            // PUSH A
+            //  5    1   PUSH A
             result[5].Should().Be(0x70);
-            
-            // CALL SUBROUTINE (address 10)
-            result[6].Should().Be(0x60); result[7].Should().Be(0x0A); result[8].Should().Be(0x00);
-            
-            // POP A
+            //  6    3   CALL SUBROUTINE (address 10)
+            result[6].Should().Be(0x60); result[7].Should().Be(0x0B); result[8].Should().Be(0x00);
+            //  9    1   POP A
             result[9].Should().Be(0x71);
-            
-            // HALT
+            // 10    1   HALT
             result[10].Should().Be(0x01);
-            
-            // At SUBROUTINE: LDB #20, MOV A,B, RET would start at address 11
+            // 11    2   LDB #20 (at SUBROUTINE:)
             result[11].Should().Be(0x11); // LDB opcode
         }
 
@@ -591,6 +584,7 @@ namespace FSAssemblerTests
             // Act & Assert
             Action act = () => _assembler.AssembleLines(lines);
             act.Should().Throw<AssemblerException>()
+               .WithInnerException<AssemblerException>()
                .WithMessage("*requires an address*");
         }
 
@@ -603,6 +597,7 @@ namespace FSAssemblerTests
             // Act & Assert
             Action act = () => _assembler.AssembleLines(lines);
             act.Should().Throw<AssemblerException>()
+               .WithInnerException<AssemblerException>()
                .WithMessage("*requires a register*");
         }
 
@@ -615,6 +610,7 @@ namespace FSAssemblerTests
             // Act & Assert
             Action act = () => _assembler.AssembleLines(lines);
             act.Should().Throw<AssemblerException>()
+               .WithInnerException<AssemblerException>()
                .WithMessage("*Invalid PUSH register*");
         }
 
@@ -627,6 +623,7 @@ namespace FSAssemblerTests
             // Act & Assert
             Action act = () => _assembler.AssembleLines(lines);
             act.Should().Throw<AssemblerException>()
+               .WithInnerException<AssemblerException>()
                .WithMessage("*requires two registers*");
         }
 
@@ -639,6 +636,7 @@ namespace FSAssemblerTests
             // Act & Assert
             Action act = () => _assembler.AssembleLines(lines);
             act.Should().Throw<AssemblerException>()
+               .WithInnerException<AssemblerException>()
                .WithMessage("*Invalid MOV registers*");
         }
 
@@ -651,6 +649,7 @@ namespace FSAssemblerTests
             // Act & Assert
             Action act = () => _assembler.AssembleLines(lines);
             act.Should().Throw<AssemblerException>()
+               .WithInnerException<AssemblerException>()
                .WithMessage("*Invalid SWP registers*");
         }
 
@@ -663,6 +662,7 @@ namespace FSAssemblerTests
             // Act & Assert
             Action act = () => _assembler.AssembleLines(lines);
             act.Should().Throw<AssemblerException>()
+               .WithInnerException<AssemblerException>()
                .WithMessage("*requires an address*");
         }
 
@@ -675,6 +675,7 @@ namespace FSAssemblerTests
             // Act & Assert
             Action act = () => _assembler.AssembleLines(lines);
             act.Should().Throw<AssemblerException>()
+               .WithInnerException<AssemblerException>()
                .WithMessage("*takes no parameters*");
         }
 
@@ -688,13 +689,13 @@ namespace FSAssemblerTests
             // Arrange
             string[] lines = 
             {
-                "sta 0x1000",
-                "PUSH a",
-                "pop A",
-                "mov a,b",
-                "SWP A,B",
-                "call 0x2000",
-                "RET"
+                "sta 0x1000",      //   0    3   STA 0x1000
+                "PUSH a",          //   3    1   PUSH A
+                "pop A",           //   4    1   POP A
+                "mov a,b",         //   5    1   MOV A,B
+                "SWP A,B",         //   6    1   SWP A,B
+                "call 0x2000",     //   7    3   CALL 0x2000
+                "RET"              //  10    1   RET
             };
 
             // Act
@@ -702,14 +703,21 @@ namespace FSAssemblerTests
 
             // Assert
             result.Should().NotBeNull();
-            result.Should().HaveCount(10);
-            result[0].Should().Be(0x50); // STA
-            result[3].Should().Be(0x70); // PUSH A
-            result[4].Should().Be(0x71); // POP A
-            result[5].Should().Be(0xA0); // MOV A,B
-            result[6].Should().Be(0xA6); // SWP A,B
-            result[7].Should().Be(0x60); // CALL
-            result[10].Should().Be(0x61); // RET (index 10, not 9)
+            result.Should().HaveCount(11);
+            //   0    3   STA 0x1000
+            result[0].Should().Be(0x50); result[1].Should().Be(0x00); result[2].Should().Be(0x10);
+            //   3    1   PUSH A
+            result[3].Should().Be(0x70);
+            //   4    1   POP A
+            result[4].Should().Be(0x71);
+            //   5    1   MOV A,B
+            result[5].Should().Be(0xA0);
+            //   6    1   SWP A,B
+            result[6].Should().Be(0xA6);
+            //   7    3   CALL 0x2000
+            result[7].Should().Be(0x60); result[8].Should().Be(0x00); result[9].Should().Be(0x20);
+            //  10    1   RET
+            result[10].Should().Be(0x61);
         }
 
         #endregion

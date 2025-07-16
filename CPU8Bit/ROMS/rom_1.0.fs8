@@ -1,6 +1,158 @@
 ﻿Startup:
-    DB "FS System v1.0", 0x00
+    LDDA WelcomeMessage    
+    CALL PrintString      
+    HALT
+
+PrintString:
+    ; L'adresse de la chaîne est reçue dans le registre 16 bits DA
+    ; DA contient l'adresse de la chaîne de caractères
     
+    ; Sauvegarder DA pour pouvoir l'utiliser comme pointeur
+    PUSH DA
+    
+PrintString_Loop:
+    ; Charger le caractère actuel depuis DA
+    LDA (DA)              ; Charger le caractère pointé par DA dans A
+    
+    ; Vérifier si c'est le caractère de fin (0x00)
+    CMP A, 0
+    JZ PrintString_End    ; Si zéro, terminer
+    
+    ; Afficher le caractère via syscall
+    LDB A                 ; Mettre le caractère dans B pour syscall
+    LDA 1                 ; Code syscall 1 = PRINT_CHAR
+    SYS                   ; Appel système
+    
+    ; Passer au caractère suivant
+    INC16 DA              ; Incrémenter l'adresse
+    JMP PrintString_Loop  ; Continuer la boucle
+    
+PrintString_End:
+    ; Restaurer DA
+    POP DA
+    RET                   ; Retour de la fonction
+
+PrintChar:
+    ; Fonction PrintChar pour afficher un caractère à une position donnée
+    ; Entrée: A = code ASCII du caractère
+    ;         B = position X (colonne)
+    ;         C = position Y (ligne)
+    ;         D = couleur de premier plan
+    ;         E = couleur de fond
+    
+    ; Sauvegarder tous les registres
+    PUSH A
+    PUSH B
+    PUSH C
+    PUSH D
+    PUSH E
+    PUSH DA
+    
+    ; Calculer l'adresse de la matrice du caractère dans AmstradCPCFont
+    ; Chaque caractère = 8 octets, donc adresse = AmstradCPCFont + (A * 8)
+    
+    ; Multiplier A par 8 (décaler 3 bits à gauche)
+    SHL A                 ; A = A * 2
+    SHL A                 ; A = A * 4
+    SHL A                 ; A = A * 8
+    
+    ; Calculer l'adresse absolue: AmstradCPCFont + offset
+    LDDA AmstradCPCFont   ; Charger l'adresse de base de la police
+    ADD16 DA, A           ; Ajouter l'offset du caractère (DA = DA + A étendu)
+    
+    ; Maintenant DA pointe vers les données du caractère (8 octets)
+    
+    ; Calculer la position pixel de départ
+    ; X pixel = B * 8, Y pixel = C * 8
+    
+    ; Traitement de X
+    LDF B                 ; Copier B dans F
+    SHL F                 ; F = B * 2
+    SHL F                 ; F = B * 4  
+    SHL F                 ; F = B * 8 (position X en pixels)
+    
+    ; Traitement de Y  
+    SHL C                 ; C = C * 2
+    SHL C                 ; C = C * 4
+    SHL C                 ; C = C * 8 (position Y en pixels)
+    
+    ; Boucle pour dessiner les 8 lignes du caractère
+    LDA 8                 ; Compteur de lignes
+    
+PrintChar_LineLoop:
+    PUSH A                ; Sauvegarder le compteur de lignes
+    
+    ; Charger les données de la ligne actuelle
+    LDB (DA)              ; Charger la ligne de pixels depuis DA
+    
+    ; Dessiner les 8 pixels de cette ligne
+    LDE 8                 ; Compteur de pixels
+    
+PrintChar_PixelLoop:
+    ; Tester le bit le plus significatif de B
+    LDA B
+    AND A, 0x80           ; Masquer le bit 7
+    JZ PrintChar_BackgroundPixel
+    
+    ; Dessiner pixel de premier plan
+    POP E                 ; Récupérer couleur de premier plan
+    PUSH E
+    JMP PrintChar_DrawPixel
+    
+PrintChar_BackgroundPixel:
+    ; Dessiner pixel de fond
+    POP D                 ; Récupérer couleur de fond  
+    PUSH D
+    MOV E, D              ; Utiliser couleur de fond
+    
+PrintChar_DrawPixel:
+    ; Appel système pour dessiner le pixel
+    ; SYSCALL 0x20: SetPixel - BC = X, D = Y, A après syscall = couleur
+    
+    ; Préparer les paramètres pour syscall SetPixel
+    ; X est dans F (position X de base + offset pixel)
+    ; Y est dans C (position Y de base + ligne actuelle)
+    
+    LDA 0x20              ; Code syscall SetPixel
+    LDB 0                 ; High byte de X = 0
+    MOV C, F              ; Low byte de X = position courante
+    ; D contient déjà Y
+    ; A sera écrasé par le code syscall, on met la couleur après
+    PUSH E                ; Sauvegarder couleur
+    SYS                   ; Appel système
+    POP A                 ; Récupérer couleur dans A
+    
+    ; Passer au pixel suivant
+    INC F                 ; Incrémenter position X
+    SHL B                 ; Décaler les données de la ligne
+    DEC E                 ; Décrémenter compteur de pixels
+    JNZ PrintChar_PixelLoop
+    
+    ; Passer à la ligne suivante
+    INC DA                ; Pointer vers la ligne suivante de la police
+    INC C                 ; Incrémenter position Y
+    POP F                 ; Restaurer position X de départ
+    
+    POP A                 ; Récupérer compteur de lignes
+    DEC A                 ; Décrémenter compteur
+    JNZ PrintChar_LineLoop
+    
+    ; Restaurer tous les registres
+    POP DA
+    POP E
+    POP D
+    POP C
+    POP B
+    POP A
+    
+    RET
+
+WelcomeMessage:
+    DB "FS System v1.0", 0x00
+ScreenSize:
+    DB 0x40, 0x01, 0xC8, 0x00 ; Width: 320 pixels (0x4001 little endien), Height: 200 pixels (0xC8 little endien)
+CharSize:
+    DB 0x08, 0x08 ; Width: 8 pixels, Height: 8 pixels
 AmstradCPCFont:
     DB 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00    ; 0x00 - NULL
     DB 0x7E, 0x81, 0xA5, 0x81, 0xBD, 0x99, 0x81, 0x7E    ; 0x01 - SOH
@@ -130,5 +282,4 @@ AmstradCPCFont:
     DB 0xE0, 0x30, 0x30, 0x1C, 0x30, 0x30, 0xE0, 0x00    ; 0x7D - }
     DB 0x76, 0xDC, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00    ; 0x7E - ~
     DB 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF    ; 0x7F - DEL (carré)
-PrintChar:
 
