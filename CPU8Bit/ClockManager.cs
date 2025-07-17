@@ -173,7 +173,7 @@ public static class InstructionCycles
     public const int STDB = 5;         // Store DB - 5 cycles
     
     // Appels système
-    public const int SYS = 8;          // System call - 8 cycles (coûteux car traitement complexe)
+    public const int SYS_CALL = 8;      // System call - 8 cycles (coûteux car traitement complexe)
     
     // Instructions de pile (sous-routines)
     public const int CALL = 5;         // Call subroutine - 5 cycles (fetch addr + push + jump)
@@ -207,6 +207,43 @@ public static class InstructionCycles
     public const int JRNZ = 2;         // JRNZ offset - 2 cycles
     public const int JRC = 2;          // JRC offset - 2 cycles
     
+    // Auto-increment/decrement array operations (0xC4-0xCB)
+    public const int LDAIX1 = 2;       // LDAIX1+ - 2 cycles (load + auto-increment)
+    public const int LDAIY1 = 2;       // LDAIY1+ - 2 cycles
+    public const int STAIX1 = 2;       // STAIX1+ - 2 cycles (store + auto-increment)
+    public const int STAIY1 = 2;       // STAIY1+ - 2 cycles
+    public const int LDAIX1_DEC = 2;   // LDAIX1- - 2 cycles (load + auto-decrement)
+    public const int LDAIY1_DEC = 2;   // LDAIY1- - 2 cycles
+    public const int STAIX1_DEC = 2;   // STAIX1- - 2 cycles (store + auto-decrement)
+    public const int STAIY1_DEC = 2;   // STAIY1- - 2 cycles
+    
+    // Index register increment/decrement (0xE0-0xE7)
+    public const int INCIX1 = 2;       // INCIX1 - 2 cycles (16-bit increment)
+    public const int DECIX1 = 2;       // DECIX1 - 2 cycles (16-bit decrement)
+    public const int INCIY1 = 2;       // INCIY1 - 2 cycles
+    public const int DECIY1 = 2;       // DECIY1 - 2 cycles
+    public const int INCIX2 = 2;       // INCIX2 - 2 cycles
+    public const int DECIX2 = 2;       // DECIX2 - 2 cycles
+    public const int INCIY2 = 2;       // INCIY2 - 2 cycles
+    public const int DECIY2 = 2;       // DECIY2 - 2 cycles
+    
+    // Index register add immediate (0xE8-0xEB)
+    public const int ADDIX1 = 4;       // ADDIX1 #imm16 - 4 cycles (opcode + 16-bit immediate + add)
+    public const int ADDIX2 = 4;       // ADDIX2 #imm16 - 4 cycles
+    public const int ADDIY1 = 4;       // ADDIY1 #imm16 - 4 cycles
+    public const int ADDIY2 = 4;       // ADDIY2 #imm16 - 4 cycles
+    
+    // Index register transfer instructions (0xF1-0xF9)
+    public const int MVIX1IX2 = 2;     // MVIX1IX2 - 2 cycles (16-bit transfer)
+    public const int MVIX2IX1 = 2;     // MVIX2IX1 - 2 cycles
+    public const int MVIY1IY2 = 2;     // MVIY1IY2 - 2 cycles
+    public const int MVIY2IY1 = 2;     // MVIY2IY1 - 2 cycles
+    public const int MVIX1IY1 = 2;     // MVIX1IY1 - 2 cycles
+    public const int MVIY1IX1 = 2;     // MVIY1IX1 - 2 cycles
+    public const int SWPIX1IX2 = 3;    // SWPIX1IX2 - 3 cycles (16-bit swap)
+    public const int SWPIY1IY2 = 3;    // SWPIY1IY2 - 3 cycles
+    public const int SWPIX1IY1 = 3;    // SWPIX1IY1 - 3 cycles
+    
     /// <summary>
     /// Obtient le nombre de cycles pour un opcode donné
     /// </summary>
@@ -233,8 +270,10 @@ public static class InstructionCycles
             0x17 => LDDB_IMM16, // LDDB #imm16 - 3 cycles
             0x18 => LDDA_ADDR,  // LDDA addr - 5 cycles (opcode + addr + lecture mot)
             0x19 => LDDB_ADDR,  // LDDB addr - 5 cycles
-            0x1A => LDA_IMM,    // LDDA #imm (héritage)
-            0x1B => LDA_IMM,    // LDDB #imm (héritage)
+            0x1A => 3,          // LDIX1 #imm16 - 3 cycles (16-bit load)
+            0x1B => 3,          // LDIX2 #imm16 - 3 cycles
+            0x1C => 3,          // LDIY1 #imm16 - 3 cycles
+            0x1D => 3,          // LDIY2 #imm16 - 3 cycles
             
             // Arithmétique
             0x20 => ADD,        // ADD A,B
@@ -326,14 +365,14 @@ public static class InstructionCycles
             0x8F => 2,          // LDA (IDY2) - 2 cycles
             
             // Indexed store operations (0x90-0x9B)
-            0x90 => 2,          // STA (IDX1) - 2 cycles (indexed store)
-            0x91 => 2,          // STA (IDX2) - 2 cycles
-            0x92 => 2,          // STA (IDY1) - 2 cycles
-            0x93 => 2,          // STA (IDY2) - 2 cycles
-            0x94 => 3,          // PUSHIDX1 - 3 cycles (16-bit push)
-            0x95 => 3,          // POPIDX1 - 3 cycles (16-bit pop)
-            0x96 => 3,          // PUSHIDX2 - 3 cycles
-            0x97 => 3,          // POPIDX2 - 3 cycles
+            0x90 => 3,          // LDA (IDX1+offset) - 3 cycles (opcode + offset + indexed load)
+            0x91 => 3,          // LDB (IDX1+offset) - 3 cycles
+            0x92 => 3,          // LDA (IDY1+offset) - 3 cycles
+            0x93 => 3,          // LDB (IDY1+offset) - 3 cycles
+            0x94 => 3,          // STA (IDX1+offset) - 3 cycles (opcode + offset + indexed store)
+            0x95 => 3,          // STB (IDX1+offset) - 3 cycles
+            0x96 => 3,          // STA (IDY1+offset) - 3 cycles
+            0x97 => 3,          // STB (IDY1+offset) - 3 cycles
             0x98 => 3,          // PUSHIDY1 - 3 cycles
             0x99 => 3,          // POPIDY1 - 3 cycles
             0x9A => 3,          // PUSHIDY2 - 3 cycles
@@ -355,8 +394,45 @@ public static class InstructionCycles
             0xC2 => JRNZ,       // JRNZ offset - 2 cycles
             0xC3 => JRC,        // JRC offset - 2 cycles
             
+            // Auto-increment/decrement array operations (0xC4-0xCB)
+            0xC4 => 2,          // LDAIX1+ - 2 cycles (load + auto-increment)
+            0xC5 => 2,          // LDAIY1+ - 2 cycles
+            0xC6 => 2,          // STAIX1+ - 2 cycles (store + auto-increment)
+            0xC7 => 2,          // STAIY1+ - 2 cycles
+            0xC8 => 2,          // LDAIX1- - 2 cycles (load + auto-decrement)
+            0xC9 => 2,          // LDAIY1- - 2 cycles
+            0xCA => 2,          // STAIX1- - 2 cycles (store + auto-decrement)
+            0xCB => 2,          // STAIY1- - 2 cycles
+            
+            // Index register increment/decrement (0xE0-0xE7)
+            0xE0 => 2,          // INCIX1 - 2 cycles (16-bit increment)
+            0xE1 => 2,          // DECIX1 - 2 cycles (16-bit decrement)
+            0xE2 => 2,          // INCIY1 - 2 cycles
+            0xE3 => 2,          // DECIY1 - 2 cycles
+            0xE4 => 2,          // INCIX2 - 2 cycles
+            0xE5 => 2,          // DECIX2 - 2 cycles
+            0xE6 => 2,          // INCIY2 - 2 cycles
+            0xE7 => 2,          // DECIY2 - 2 cycles
+            
+            // Index register add immediate (0xE8-0xEB)
+            0xE8 => 4,          // ADDIX1 #imm16 - 4 cycles (opcode + 16-bit immediate + add)
+            0xE9 => 4,          // ADDIX2 #imm16 - 4 cycles
+            0xEA => 4,          // ADDIY1 #imm16 - 4 cycles
+            0xEB => 4,          // ADDIY2 #imm16 - 4 cycles
+            
             // Appel système
-            0xF0 => SYS,        // SYS (appel système)
+            0xF0 => SYS_CALL,   // SYS (appel système)
+            
+            // Index register transfer instructions (0xF1-0xF9)
+            0xF1 => 2,          // MVIX1IX2 - 2 cycles (16-bit transfer)
+            0xF2 => 2,          // MVIX2IX1 - 2 cycles
+            0xF3 => 2,          // MVIY1IY2 - 2 cycles
+            0xF4 => 2,          // MVIY2IY1 - 2 cycles
+            0xF5 => 2,          // MVIX1IY1 - 2 cycles
+            0xF6 => 2,          // MVIY1IX1 - 2 cycles
+            0xF7 => 3,          // SWPIX1IX2 - 3 cycles (16-bit swap)
+            0xF8 => 3,          // SWPIY1IY2 - 3 cycles
+            0xF9 => 3,          // SWPIX1IY1 - 3 cycles
             
             // Instructions inconnues
             _ => 1              // Par défaut - 1 cycle

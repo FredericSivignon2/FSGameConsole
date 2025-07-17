@@ -2,14 +2,19 @@
 
 ## Préliminaires :
 
+BIEN UTILISER CE QUI EST DECRIT DANS LES PRELIMINAIRES !!!
 1) Dans les commandes Powershell que tu donnes à executer, n'utilise jamais "&&" pour concaténer l'execution de 2 commandes, car cela ne fonctionne pas. Créés plutôt 2 commandes séparées.
    Prête particulièrement attention à ce détail. Donc, je me répète : Quand tu as plusieurs commandes à executer dans un shell (DOS ou Powershell), execute les une par une et n'essaye pas de les concaténer.
    Par exemple, il ne faut pas faire : "cd FSCPUTests && dotnet test", mais le faire en 2 temps : "cd FSCPUTests", puis, une fois que le "cd" est exécuté, faire "dotnet test". Sinon,
    Sinon, il y a une erreur dans la console et impossible de te faire continuer, tout est bloqué (je  pense que tu ne détectes pas de code de retour, du coup tu attends en boucle sans timeout).
-2) Avant toute modification du code, assures toi de déjà bien connaitre l'existant, après analyse complète de tout le projet.
+2) Avant toute modification du code, assures toi de déjà bien connaitre l'existant, après analyse complète de tout le projet. De plus, ne supprime aucune fonction/méthode existante sans me demander confirmation
+et bien savoir pourquoi tu la ou les supprimes. En règle général, tout ajout de code ou de logique à l'existant ne doit pas casser les tests unitaires. Donc, sauf cas spécial, il ne devrait pas être nécessaire
+de modifier les tests unitaires existant avec l'ajout de nouvelles fonctionnalités. Cela ne vaut que si une fonctionalité existante doit être modifiée, ce qui sera de plus en plus rare.
 3) Le projet utilise .NET 9, donc prend bien en compte les dernières nouveautés de cette version dans ce que tu codes.
 4) N'hésites pas à commenter abondamment le projet pour qu'il soit facilement compréhensible.
 5) Tous les commentaires doivent être rédigés en Anglais. Si tu trouves des commentaires en français, renommes les en Anglais.
+6) Quand tu créés un code assembleur, fait attention aux instructions qui utilisent les même registres : Par exemple, si tu déclares un compteur de boucle en utilisant le registre A, que tu vas décrémenté jusqu'à
+0 pour terminer la boucle, n'utilise pas une autre instruction dans la boucle qui va aussi utiliser A, comme LDAIX1+ pour donner un exemple. Donc, tu dois t'assurer de la cohérence des instructions utilisées.
 
 ## Architecture globale du projet
 

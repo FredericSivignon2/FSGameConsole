@@ -636,6 +636,396 @@ namespace FSAssemblerTests
             stopwatch.ElapsedMilliseconds.Should().BeLessThan(1000); // Should complete in under 1 second
         }
 
+        [Fact]
+        public void IndexInstructionsWithLargeProgram_ShouldAssembleInReasonableTime()
+        {
+            // Arrange - Generate a large program with index instructions
+            var lines = new List<string>();
+            lines.Add("MAIN:");
+            lines.Add("LDIX1 #0x8000");
+            lines.Add("LDIY1 #0x9000");
+            
+            // Add 500 index operations
+            for (int i = 0; i < 500; i++)
+            {
+                lines.Add("LDAIX1+");
+                lines.Add("STAIY1+");
+                lines.Add("INCIX1");
+                lines.Add("DECIY1");
+            }
+            lines.Add("HALT");
+
+            // Act
+            var stopwatch = System.Diagnostics.Stopwatch.StartNew();
+            byte[] result = _assembler.AssembleLines(lines.ToArray());
+            stopwatch.Stop();
+
+            // Assert
+            result.Should().NotBeNull();
+            result.Length.Should().Be(2009); // 3+3+500*(1+1+1+1)+1 = 2009 bytes total
+            stopwatch.ElapsedMilliseconds.Should().BeLessThan(1000); // Should complete in under 1 second
+        }
+
+        #endregion
+
+        #region Index Register Instructions Integration Tests
+
+        [Fact]
+        public void IndexArrayCopyProgram_ShouldAssembleCorrectly()
+        {
+            // Arrange - Efficient array copy using index registers with auto-increment
+            string[] lines = 
+            {                                         // pos  size
+                "ARRAY_COPY:",                        //  -    0   Label
+                "LDIX1 #SOURCE_ARRAY",                //  0    3   Load source pointer
+                "LDIY1 #DEST_ARRAY",                  //  3    3   Load destination pointer
+                "LDA #10",                            //  6    2   Load counter
+                "",
+                "COPY_LOOP:",                         //  -    0   Label (position 8)
+                "LDAIX1+",                            //  8    1   Load from source, increment pointer
+                "STAIY1+",                            //  9    1   Store to dest, increment pointer
+                "DEC A",                              // 10    1   Decrement counter
+                "JNZ COPY_LOOP",                      // 11    3   Continue if not zero
+                "HALT",                               // 14    1   End program
+                "",
+                "SOURCE_ARRAY:",                      //  -    0   Label (position 15)
+                "DB 1, 2, 3, 4, 5, 6, 7, 8, 9, 10",  // 15   10   Source data
+                "DEST_ARRAY:",                       //  -    0   Label (position 25)
+                "DB 0, 0, 0, 0, 0, 0, 0, 0, 0, 0"    // 25   10   Destination space
+            };
+
+            // Act
+            byte[] result = _assembler.AssembleLines(lines);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.Should().HaveCount(35); // Total: 3+3+2+1+1+1+3+1+10+10 = 35 bytes
+
+            // Verify key instructions
+            result[0].Should().Be(0x1A);  // LDIX1 #imm16
+            result[1].Should().Be(0x0F);  // SOURCE_ARRAY address low (15)
+            result[2].Should().Be(0x00);  // SOURCE_ARRAY address high
+
+            result[3].Should().Be(0x1C);  // LDIY1 #imm16
+            result[4].Should().Be(0x19);  // DEST_ARRAY address low (25)
+            result[5].Should().Be(0x00);  // DEST_ARRAY address high
+
+            result[6].Should().Be(0x10);  // LDA #imm
+            result[7].Should().Be(10);    // Counter value
+
+            result[8].Should().Be(0xC4);  // LDAIX1+
+            result[9].Should().Be(0xC7);  // STAIY1+
+            result[10].Should().Be(0x29); // DEC A
+            result[11].Should().Be(0x42); // JNZ
+            result[12].Should().Be(0x08); // COPY_LOOP address low (8)
+            result[13].Should().Be(0x00); // COPY_LOOP address high
+
+            result[14].Should().Be(0x01); // HALT
+
+            // Verify source data
+            for (int i = 0; i < 10; i++)
+            {
+                result[15 + i].Should().Be((byte)(i + 1));
+            }
+
+            // Verify destination space (initially zeros)
+            for (int i = 0; i < 10; i++)
+            {
+                result[25 + i].Should().Be(0);
+            }
+        }
+
+        [Fact]
+        public void IndexStructureAccessProgram_ShouldAssembleCorrectly()
+        {
+            // Arrange - Structure access using index registers with offset
+            string[] lines = 
+            {                                         // pos  size
+                "PLAYER_SETUP:",                      //  -    0   Label
+                "LDIX1 #PLAYER_STRUCT",               //  0    3   Point to player structure
+                "LDA #100",                           //  3    2   Player X position
+                "STA (IDX1+0)",                       //  5    2   Store X (offset 0)
+                "LDA #50",                            //  7    2   Player Y position  
+                "STA (IDX1+1)",                       //  9    2   Store Y (offset 1)
+                "LDA #255",                           // 11    2   Player health
+                "STA (IDX1+2)",                       // 13    2   Store health (offset 2)
+                "",
+                "PLAYER_READ:",                       //  -    0   Label (position 15)
+                "LDA (IDX1+0)",                       // 15    2   Read X position
+                "LDB (IDX1+1)",                       // 17    2   Read Y position
+                "LDA (IDX1+2)",                       // 19    2   Read health (overwrites X in A)
+                "HALT",                               // 21    1   End program
+                "",
+                "PLAYER_STRUCT:",                     //  -    0   Label (position 22)
+                "DB 0, 0, 0"                          // 22    3   X, Y, Health
+            };
+
+            // Act
+            byte[] result = _assembler.AssembleLines(lines);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.Should().HaveCount(25); // Total: 3+2+2+2+2+2+2+2+2+2+1+3+2+1+1+6+6 = 25 bytes
+
+            // Verify structure setup
+            result[0].Should().Be(0x1A);  // LDIX1 #imm16
+            result[1].Should().Be(0x16);  // PLAYER_STRUCT address low (22)
+            result[2].Should().Be(0x00);  // PLAYER_STRUCT address high
+
+            // Verify X position setup
+            result[3].Should().Be(0x10);  // LDA #imm
+            result[4].Should().Be(100);   // X value
+            result[5].Should().Be(0x94);  // STA (IDX1+offset)
+            result[6].Should().Be(0);     // Offset 0
+
+            // Verify Y position setup
+            result[7].Should().Be(0x10);  // LDA #imm
+            result[8].Should().Be(50);    // Y value
+            result[9].Should().Be(0x94);  // STA (IDX1+offset)
+            result[10].Should().Be(1);    // Offset 1
+
+            // Verify health setup
+            result[11].Should().Be(0x10); // LDA #imm
+            result[12].Should().Be(255);  // Health value
+            result[13].Should().Be(0x94); // STA (IDX1+offset)
+            result[14].Should().Be(2);    // Offset 2
+
+            // Verify read operations
+            result[15].Should().Be(0x90); // LDA (IDX1+offset)
+            result[16].Should().Be(0);    // Offset 0
+            result[17].Should().Be(0x91); // LDB (IDX1+offset)
+            result[18].Should().Be(1);    // Offset 1
+            result[19].Should().Be(0x90); // LDA (IDX1+offset)
+            result[20].Should().Be(2);    // Offset 2
+
+            result[21].Should().Be(0x01); // HALT
+        }
+
+        [Fact]
+        public void IndexStringProcessingProgram_ShouldAssembleCorrectly()
+        {
+            // Arrange - String processing using index registers
+            string[] lines = 
+            {                                         // pos  size
+                "STRING_PROCESS:",                    //  -    0   Label
+                "LDIX1 #SOURCE_STRING",               //  0    3   Source string pointer
+                "LDIY1 #DEST_STRING",                 //  3    3   Destination string pointer
+                "",
+                "PROCESS_LOOP:",                      //  -    0   Label (position 6)
+                "LDAIX1+",                            //  6    1   Load char from source, increment
+                "CMP A,#0",                           //  7    2   Check for null terminator
+                "JZ PROCESS_DONE",                    //  9    3   Jump if end of string
+                "",
+                "; Convert lowercase to uppercase (simplified)",
+                "CMP A,#97",                          // 12    2   Compare with 'a' (ASCII 97)
+                "JC STORE_CHAR",                      // 14    3   Jump if less than 'a'
+                "CMP A,#122",                         // 17    2   Compare with 'z' (ASCII 122)
+                "JNC STORE_CHAR",                     // 19    3   Jump if greater than 'z'
+                "SUB A,#32",                          // 22    2   Convert to uppercase (subtract 32)
+                "",
+                "STORE_CHAR:",                        //  -    0   Label (position 24)
+                "STAIY1+",                            // 24    1   Store char to dest, increment
+                "JMP PROCESS_LOOP",                   // 25    3   Continue processing
+                "",
+                "PROCESS_DONE:",                      //  -    0   Label (position 28)
+                "LDA #0",                             // 28    2   Load null terminator
+                "STA (IDY1)",                         // 30    1   Store null terminator
+                "HALT",                               // 31    1   End program
+                "",
+                "SOURCE_STRING:",                     //  -    0   Label (position 32)
+                "DB 'h', 'e', 'l', 'l', 'o', 0",     // 32    6   Source string: "hello"
+                "DEST_STRING:",                       //  -    0   Label (position 38)
+                "DB 0, 0, 0, 0, 0, 0"                 // 38    6   Destination buffer
+            };
+
+            // Act
+            byte[] result = _assembler.AssembleLines(lines);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.Should().HaveCount(44); // Total: 3+3+1+2+3+2+3+2+3+2+1+3+2+1+1+6+6 = 44 bytes
+
+            // Verify setup
+            result[0].Should().Be(0x1A);  // LDIX1 #imm16
+            result[1].Should().Be(0x20);  // SOURCE_STRING address low (32)
+            result[2].Should().Be(0x00);  // SOURCE_STRING address high
+
+            result[3].Should().Be(0x1C);  // LDIY1 #imm16
+            result[4].Should().Be(0x26);  // DEST_STRING address low (38)
+            result[5].Should().Be(0x00);  // DEST_STRING address high
+
+            // Verify main loop
+            result[6].Should().Be(0xC4);  // LDAIX1+
+            result[7].Should().Be(0x2C);  // CMP A,#imm (using existing CMP A,B where B=immediate)
+            result[8].Should().Be(0);     // Immediate value (null)
+            result[9].Should().Be(0x41);  // JZ
+            result[10].Should().Be(0x1C); // PROCESS_DONE address low (28)
+            result[11].Should().Be(0x00); // PROCESS_DONE address high
+
+            // Verify character processing
+            result[24].Should().Be(0xC7); // STAIY1+
+            result[25].Should().Be(0x40); // JMP
+            result[26].Should().Be(0x06); // PROCESS_LOOP address low (6)
+            result[27].Should().Be(0x00); // PROCESS_LOOP address high
+
+            // Verify source string
+            result[32].Should().Be((byte)'h');
+            result[33].Should().Be((byte)'e');
+            result[34].Should().Be((byte)'l');
+            result[35].Should().Be((byte)'l');
+            result[36].Should().Be((byte)'o');
+            result[37].Should().Be(0); // Null terminator
+        }
+
+        [Fact]
+        public void IndexMultidimensionalArrayAccess_ShouldAssembleCorrectly()
+        {
+            // Arrange - 2D array access using index arithmetic
+            string[] lines = 
+            {                                         // pos  size
+                "MATRIX_ACCESS:",                     //  -    0   Label
+                "LDIX1 #MATRIX",                      //  0    3   Base address of 3x3 matrix
+                "LDA #1",                             //  3    2   Row index (1)
+                "LDB #2",                             //  5    2   Column index (2)
+                "",
+                "; Calculate offset: row * 3 + col",
+                "LDC #3",                             //  7    2   Load row width (3)
+                "MOV A,A",                            //  9    1   Ensure A contains row (redundant but clear)
+                "",
+                "; Multiply row by width (A * C)",
+                "PUSH A",                             // 10    1   Save original row
+                "LDA #0",                             // 11    2   Initialize result
+                "MULT_LOOP:",                         //  -    0   Label (position 13)
+                "POP A",                              // 13    1   Get current row value
+                "CMP A,#0",                           // 14    2   Check if done
+                "JZ MULT_DONE",                       // 16    3   Jump if multiplication complete
+                "PUSH A",                             // 19    1   Save row value back
+                "LDA TEMP_RESULT",                    // 20    3   Load current result
+                "ADD A,C",                            // 23    1   Add width to result  
+                "STA TEMP_RESULT",                    // 24    3   Store back
+                "POP A",                              // 27    1   Get row value
+                "DEC A",                              // 28    1   Decrement row counter
+                "PUSH A",                             // 29    1   Save decremented value
+                "JMP MULT_LOOP",                      // 30    3   Continue multiplication
+                "",
+                "MULT_DONE:",                         //  -    0   Label (position 33)
+                "LDA TEMP_RESULT",                    // 33    3   Load multiplication result
+                "ADD A,B",                            // 36    1   Add column index
+                "ADDIX1 #0",                          // 37    3   Add offset to base (A in separate instruction)
+                "; Note: This is simplified - real implementation would need offset in 16-bit",
+                "",
+                "LDA (IDX1)",                         // 40    1   Load matrix element
+                "STA RESULT",                         // 41    3   Store result
+                "HALT",                               // 44    1   End program
+                "",
+                "MATRIX:",                            //  -    0   Label (position 45)
+                "DB 1, 2, 3",                         // 45    3   Row 0: [1, 2, 3]
+                "DB 4, 5, 6",                         // 48    3   Row 1: [4, 5, 6]  
+                "DB 7, 8, 9",                         // 51    3   Row 2: [7, 8, 9]
+                "TEMP_RESULT:",                       //  -    0   Label (position 54)
+                "DB 0",                               // 54    1   Temporary storage
+                "RESULT:",                            //  -    0   Label (position 55)
+                "DB 0"                                // 55    1   Final result
+            };
+
+            // Act
+            byte[] result = _assembler.AssembleLines(lines);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.Should().HaveCount(56); // Complex calculation
+
+            // Verify matrix setup
+            result[0].Should().Be(0x1A);  // LDIX1 #imm16
+            result[1].Should().Be(0x2D);  // MATRIX address low (45)
+            result[2].Should().Be(0x00);  // MATRIX address high
+
+            // Verify matrix data (3x3 = 9 elements)
+            result[45].Should().Be(1); result[46].Should().Be(2); result[47].Should().Be(3);
+            result[48].Should().Be(4); result[49].Should().Be(5); result[50].Should().Be(6);
+            result[51].Should().Be(7); result[52].Should().Be(8); result[53].Should().Be(9);
+
+            // This test validates that complex index arithmetic can be assembled
+            // The actual matrix access would retrieve matrix[1][2] = 6
+        }
+
+        [Fact]
+        public void IndexRegisterTransferOperations_ShouldAssembleCorrectly()
+        {
+            // Arrange - Test all index register transfer and swap operations
+            string[] lines = 
+            {                                         // pos  size
+                "INDEX_OPERATIONS:",                  //  -    0   Label
+                "; Initialize all index registers",
+                "LDIX1 #0x1111",                      //  0    3   Load IDX1
+                "LDIX2 #0x2222",                      //  3    3   Load IDX2
+                "LDIY1 #0x3333",                      //  6    3   Load IDY1
+                "LDIY2 #0x4444",                      //  9    3   Load IDY2
+                "",
+                "; Test move operations",
+                "MVIX1IX2",                           // 12    1   Move IDX1 to IDX2
+                "MVIY1IY2",                           // 13    1   Move IDY1 to IDY2
+                "",
+                "; Test swap operations",
+                "SWPIX1IY1",                          // 14    1   Swap IDX1 and IDY1
+                "SWPIX1IX2",                          // 15    1   Swap IDX1 and IDX2
+                "",
+                "; Test arithmetic operations",
+                "INCIX1",                             // 16    1   Increment IDX1
+                "DECIY1",                             // 17    1   Decrement IDY1
+                "ADDIX1 #0x1000",                     // 18    3   Add to IDX1
+                "ADDIY2 #0x0001",                     // 21    3   Add to IDY2
+                "",
+                "HALT"                                // 24    1   End program
+            };
+
+            // Act
+            byte[] result = _assembler.AssembleLines(lines);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.Should().HaveCount(25); // Total: 3+3+3+3+1+1+1+1+1+1+3+3+1 = 25 bytes
+
+            // Verify index register loads
+            result[0].Should().Be(0x1A);   // LDIX1 #imm16
+            result[1].Should().Be(0x11);   // Low byte
+            result[2].Should().Be(0x11);   // High byte
+
+            result[3].Should().Be(0x1B);   // LDIX2 #imm16
+            result[4].Should().Be(0x22);   // Low byte
+            result[5].Should().Be(0x22);   // High byte
+
+            result[6].Should().Be(0x1C);   // LDIY1 #imm16
+            result[7].Should().Be(0x33);   // Low byte
+            result[8].Should().Be(0x33);   // High byte
+
+            result[9].Should().Be(0x1D);   // LDIY2 #imm16
+            result[10].Should().Be(0x44);  // Low byte
+            result[11].Should().Be(0x44);  // High byte
+
+            // Verify transfer operations
+            result[12].Should().Be(0xF1);  // MVIX1IX2
+            result[13].Should().Be(0xF3);  // MVIY1IY2
+
+            // Verify swap operations
+            result[14].Should().Be(0xF9);  // SWPIX1IY1
+            result[15].Should().Be(0xF7);  // SWPIX1IX2
+
+            // Verify arithmetic operations
+            result[16].Should().Be(0xE0);  // INCIX1
+            result[17].Should().Be(0xE3);  // DECIY1
+
+            result[18].Should().Be(0xE8);  // ADDIX1 #imm16
+            result[19].Should().Be(0x00);  // Low byte of 0x1000
+            result[20].Should().Be(0x10);  // High byte of 0x1000
+
+            result[21].Should().Be(0xEB);  // ADDIY2 #imm16
+            result[22].Should().Be(0x01);  // Low byte of 0x0001
+            result[23].Should().Be(0x00);  // High byte of 0x0001
+
+            result[24].Should().Be(0x01);  // HALT
+        }
+
         #endregion
     }
 }

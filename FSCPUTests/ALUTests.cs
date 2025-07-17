@@ -324,6 +324,21 @@ namespace FSCPUTests
         }
 
         [Fact]
+        public void Decrement_ShouldSetZeroFlagWhenResultIsZero()
+        {
+            // Arrange
+            byte value = 1;
+
+            // Act
+            _alu.Decrement(ref value);
+
+            // Assert
+            value.Should().Be(0);
+            _cpu.SR.Zero.Should().BeTrue();
+            _cpu.SR.Carry.Should().BeFalse();
+        }
+
+        [Fact]
         public void Decrement_ShouldSetCarryFlagOnUnderflow()
         {
             // Arrange
