@@ -1,4 +1,4 @@
-# Project Emulateur console de jeux vintage
+# Projet Emulateur console de jeux vintage
 
 ## Préliminaires :
 
@@ -15,6 +15,10 @@ de modifier les tests unitaires existant avec l'ajout de nouvelles fonctionnalit
 5) Tous les commentaires doivent être rédigés en Anglais. Si tu trouves des commentaires en français, renommes les en Anglais.
 6) Quand tu créés un code assembleur, fait attention aux instructions qui utilisent les même registres : Par exemple, si tu déclares un compteur de boucle en utilisant le registre A, que tu vas décrémenté jusqu'à
 0 pour terminer la boucle, n'utilise pas une autre instruction dans la boucle qui va aussi utiliser A, comme LDAIX1+ pour donner un exemple. Donc, tu dois t'assurer de la cohérence des instructions utilisées.
+7) **IMPORTANT** : Les expressions d'adressage indexé comme `(IDX1+5)` ou `(IDY1-10)` ne peuvent pas être utilisées avec des instructions comme JMP ou CALL. Ces expressions sont uniquement
+   supportées par les instructions LDA, LDB, STA, STB avec leur syntaxe spécialisée d'adressage indexé. Ne pas confondre avec les labels normaux.
+8) **GESTION DES ERREURS** : Quand tu implémentes des validations d'erreurs dans l'assembleur, attention au fait que les `AssemblerException` sont encapsulées dans des exceptions de type
+   "Ligne X" lors de l'assemblage. Pour les tests, il faut vérifier le message de l'inner exception, pas le message de premier niveau.
 
 ## Architecture globale du projet
 
@@ -40,6 +44,11 @@ Le projet FSGameConsole est un émulateur de console de jeux vintage, s'inspiran
 
 - DA, DB : 2 registres 16 bits pour calculs accélérés et stockage étendu
 
+**Registres d'index 16 bits (nouveauté majeure) :**
+
+- IDX1, IDX2 : 2 registres d'index X pour adressage avancé
+- IDY1, IDY2 : 2 registres d'index Y pour adressage avancé
+
 ### Architecture Little-Endian
 
 Le processeur utilise l'organisation little-endian pour les valeurs 16 bits :
@@ -50,7 +59,7 @@ Le processeur utilise l'organisation little-endian pour les valeurs 16 bits :
 
 ### Jeu d'instructions étendu
 
-Le processeur supporte maintenant **60+ instructions** organisées par catégories :
+Le processeur supporte maintenant **80+ instructions** organisées par catégories :
 
 **Instructions de base (0x00-0x01) :**
 
@@ -66,13 +75,16 @@ Le processeur supporte maintenant **60+ instructions** organisées par catégori
 - 0x14 : LDE #imm - Load E immediate
 - 0x15 : LDF #imm - Load F immediate
 
-**Instructions de chargement 16 bits (0x16-0x1B) :**
+**Instructions de chargement 16 bits (0x16-0x1D) :**
 
 - 0x16 : LDDA #imm16 - Load DA with 16-bit immediate
 - 0x17 : LDDB #imm16 - Load DB with 16-bit immediate
 - 0x18 : LDDA addr - Load DA from memory address
 - 0x19 : LDDB addr - Load DB from memory address
-- 0x1A/0x1B : Legacy 8-bit loads for DA/DB (compatibility)
+- 0x1A : LDIX1 #imm16 - Load IDX1 with 16-bit immediate (**NOUVEAU**)
+- 0x1B : LDIX2 #imm16 - Load IDX2 with 16-bit immediate (**NOUVEAU**)
+- 0x1C : LDIY1 #imm16 - Load IDY1 with 16-bit immediate (**NOUVEAU**)
+- 0x1D : LDIY2 #imm16 - Load IDY2 with 16-bit immediate (**NOUVEAU**)
 
 **Instructions arithmétiques (0x20-0x2F) :**
 
@@ -143,9 +155,128 @@ Le processeur supporte maintenant **60+ instructions** organisées par catégori
 - 0x78 : PUSH C - Push C onto stack
 - 0x79 : POP C - Pop from stack to C
 
-**Appels système (0xF0) :**
+**Instructions de chargement mémoire (0x80-0x8F) :**
+
+- 0x80 : LDA addr - Load A from memory address
+- 0x81 : LDB addr - Load B from memory address
+- 0x82 : LDC addr - Load C from memory address
+- 0x83 : LDD addr - Load D from memory address
+- 0x84 : LDE addr - Load E from memory address
+- 0x85 : LDF addr - Load F from memory address
+- 0x86 : LDA (IDX1) - Load A from address pointed by IDX1 (**NOUVEAU**)
+- 0x87 : LDB (IDX1) - Load B from address pointed by IDX1 (**NOUVEAU**)
+- 0x88 : LDA (IDY1) - Load A from address pointed by IDY1 (**NOUVEAU**)
+- 0x89 : LDB (IDY1) - Load B from address pointed by IDY1 (**NOUVEAU**)
+- 0x8A : STA (IDX1) - Store A at address pointed by IDX1 (**NOUVEAU**)
+- 0x8B : STB (IDX1) - Store B at address pointed by IDX1 (**NOUVEAU**)
+- 0x8C : STA (IDY1) - Store A at address pointed by IDY1 (**NOUVEAU**)
+- 0x8D : STB (IDY1) - Store B at address pointed by IDY1 (**NOUVEAU**)
+- 0x8E : LDA (IDX2) - Load A from address pointed by IDX2 (**NOUVEAU**)
+- 0x8F : LDA (IDY2) - Load A from address pointed by IDY2 (**NOUVEAU**)
+
+**Instructions d'adressage indexé avec offset (0x90-0x99) :**
+
+- 0x90 : LDA (IDX1+offset) - Load A from IDX1 + signed 8-bit offset (**NOUVEAU**)
+- 0x91 : LDB (IDX1+offset) - Load B from IDX1 + signed 8-bit offset (**NOUVEAU**)
+- 0x92 : LDA (IDY1+offset) - Load A from IDY1 + signed 8-bit offset (**NOUVEAU**)
+- 0x93 : LDB (IDY1+offset) - Load B from IDY1 + signed 8-bit offset (**NOUVEAU**)
+- 0x94 : STA (IDX1+offset) - Store A at IDX1 + signed 8-bit offset (**NOUVEAU**)
+- 0x95 : STB (IDX1+offset) - Store B at IDX1 + signed 8-bit offset (**NOUVEAU**)
+- 0x96 : STA (IDY1+offset) - Store A at IDY1 + signed 8-bit offset (**NOUVEAU**)
+- 0x97 : STB (IDY1+offset) - Store B at IDY1 + signed 8-bit offset (**NOUVEAU**)
+- 0x98 : LDA (IDX2+offset) - Load A from IDX2 + signed 8-bit offset (**NOUVEAU**)
+- 0x99 : LDA (IDY2+offset) - Load A from IDY2 + signed 8-bit offset (**NOUVEAU**)
+
+**Instructions de transfert entre registres (0xA0-0xA7) :**
+
+- 0xA0 : MOV A,B - Move B to A
+- 0xA1 : MOV A,C - Move C to A
+- 0xA2 : MOV B,A - Move A to B
+- 0xA3 : MOV B,C - Move C to B
+- 0xA4 : MOV C,A - Move A to C
+- 0xA5 : MOV C,B - Move B to C
+- 0xA6 : SWP A,B - Swap A and B
+- 0xA7 : SWP A,C - Swap A and C
+
+**Instructions de saut relatif (0xC0-0xC3) :**
+
+- 0xC0 : JR offset - Jump relative with signed 8-bit offset
+- 0xC1 : JRZ offset - Jump relative if Zero
+- 0xC2 : JRNZ offset - Jump relative if Not Zero
+- 0xC3 : JRC offset - Jump relative if Carry
+
+**Instructions auto-increment/decrement (0xC4-0xCB) :**
+
+- 0xC4 : LDAIX1+ - Load A from (IDX1), then increment IDX1 (**NOUVEAU**)
+- 0xC5 : LDAIY1+ - Load A from (IDY1), then increment IDY1 (**NOUVEAU**)
+- 0xC6 : STAIX1+ - Store A at (IDX1), then increment IDX1 (**NOUVEAU**)
+- 0xC7 : STAIY1+ - Store A at (IDY1), then increment IDY1 (**NOUVEAU**)
+- 0xC8 : LDAIX1- - Load A from (IDX1), then decrement IDX1 (**NOUVEAU**)
+- 0xC9 : LDAIY1- - Load A from (IDY1), then decrement IDY1 (**NOUVEAU**)
+- 0xCA : STAIX1- - Store A at (IDX1), then decrement IDX1 (**NOUVEAU**)
+- 0xCB : STAIY1- - Store A at (IDY1), then decrement IDY1 (**NOUVEAU**)
+
+**Instructions arithmétiques sur registres d'index (0xE0-0xEB) :**
+
+- 0xE0 : INCIX1 - Increment IDX1 (**NOUVEAU**)
+- 0xE1 : DECIX1 - Decrement IDX1 (**NOUVEAU**)
+- 0xE2 : INCIY1 - Increment IDY1 (**NOUVEAU**)
+- 0xE3 : DECIY1 - Decrement IDY1 (**NOUVEAU**)
+- 0xE4 : INCIX2 - Increment IDX2 (**NOUVEAU**)
+- 0xE5 : DECIX2 - Decrement IDX2 (**NOUVEAU**)
+- 0xE6 : INCIY2 - Increment IDY2 (**NOUVEAU**)
+- 0xE7 : DECIY2 - Decrement IDY2 (**NOUVEAU**)
+- 0xE8 : ADDIX1 #imm16 - Add 16-bit immediate to IDX1 (**NOUVEAU**)
+- 0xE9 : ADDIX2 #imm16 - Add 16-bit immediate to IDX2 (**NOUVEAU**)
+- 0xEA : ADDIY1 #imm16 - Add 16-bit immediate to IDY1 (**NOUVEAU**)
+- 0xEB : ADDIY2 #imm16 - Add 16-bit immediate to IDY2 (**NOUVEAU**)
+
+**Appels système et transferts d'index (0xF0-0xF9) :**
 
 - 0xF0 : SYS - System call (voir section système d'appels)
+- 0xF1 : MVIX1IX2 - Move IDX1 to IDX2 (**NOUVEAU**)
+- 0xF2 : MVIX2IX1 - Move IDX2 to IDX1 (**NOUVEAU**)
+- 0xF3 : MVIY1IY2 - Move IDY1 to IDY2 (**NOUVEAU**)
+- 0xF4 : MVIY2IY1 - Move IDY2 to IDY1 (**NOUVEAU**)
+- 0xF5 : MVIX1IY1 - Move IDX1 to IDY1 (**NOUVEAU**)
+- 0xF6 : MVIY1IX1 - Move IDY1 to IDX1 (**NOUVEAU**)
+- 0xF7 : SWPIX1IX2 - Swap IDX1 and IDX2 (**NOUVEAU**)
+- 0xF8 : SWPIY1IY2 - Swap IDY1 and IDY2 (**NOUVEAU**)
+- 0xF9 : SWPIX1IY1 - Swap IDX1 and IDY1 (**NOUVEAU**)
+
+## Instructions d'adressage indexé - Guide d'utilisation
+
+### Syntaxes supportées :
+
+1. **Adressage indexé direct** : `LDA (IDX1)`, `STA (IDY1)` - 1 octet
+2. **Adressage indexé avec offset** : `LDA (IDX1+5)`, `STA (IDY1-10)` - 2 octets
+3. **Auto-increment/decrement** : `LDAIX1+`, `STAIY1-` - 1 octet
+4. **Chargement immédiat** : `LDIX1 #0x8000` - 3 octets
+
+### Exemples pratiques :
+; Copie efficace de tableau avec auto-increment
+LDIX1 #SOURCE_ARRAY    ; Pointeur source
+LDIY1 #DEST_ARRAY      ; Pointeur destination
+LDB #10                ; Compteur
+COPY_LOOP:
+    LDAIX1+            ; Charge et incrémente source
+    STAIY1+            ; Stocke et incrémente destination
+    DEC B              ; Décrémente compteur
+    JNZ COPY_LOOP      ; Continue si pas fini
+
+; Accès aux membres d'une structure
+LDIX1 #PLAYER_STRUCT   ; Pointeur vers structure
+LDA #100
+STA (IDX1+0)           ; player.x = 100
+LDA #50  
+STA (IDX1+1)           ; player.y = 50
+LDA #255
+STA (IDX1+2)           ; player.health = 255
+### Limites importantes :
+
+- Offset signed 8-bit : -128 à +127
+- Adressage indexé limité aux instructions LDA, LDB, STA, STB
+- Auto-increment/decrement limité à IDX1 et IDY1 avec registre A
 
 ## Organisation mémoire (Style Amstrad CPC authentique)
 
@@ -198,6 +329,7 @@ Le système intègre un **ClockManager** pour un timing authentique :
 - STA : 4 cycles (opcode + address + write)
 - CALL : 5 cycles (fetch addr + push + jump)
 - SYS : 8 cycles (system call overhead)
+- Instructions d'index : 1-4 cycles selon la complexité
 
 ## ROM de démarrage
 
@@ -222,26 +354,41 @@ L'assembleur compile les fichiers **.fs8** en binaires exécutables :
 
 ### Fonctionnalités :
 
-- **Instructions** : Support complet du jeu d'instructions
+- **Instructions** : Support complet du jeu d'instructions (80+ instructions)
 - **Labels** : Résolution des adresses symboliques
 - **Données** : Directive DB pour octets bruts
 - **Commentaires** : Support des commentaires avec ';'
 - **Compilation** : Génération de fichiers .bin
+- **Adressage indexé** : Support complet des nouvelles instructions d'index
 
 ### Usage :FSAssembler input.fs8 output.bin
 
 ## Tests unitaires complets
 
-La suite de tests **FSCPUTests** contient **116+ tests** couvrant :
+La suite de tests **FSCPUTests** contient **116+ tests** et **FSAssemblerTests** contient **240+ tests** couvrant :
 
-### Couverture :
+### Couverture FSCPUTests :
 
 - **CPU8BitTests** : Tests du processeur principal (28 tests)
 - **ExtendedCPU8BitTests** : Tests des nouvelles instructions (27 tests)
+- **IndexCPU8BitTests** : Tests des instructions d'index (20+ tests) (**NOUVEAU**)
 - **MemoryTests** : Tests de la mémoire (14 tests)
 - **ALUTests** : Tests de l'unité arithmétique (26 tests)
 - **StatusRegisterTests** : Tests des flags (18 tests)
 - **IntegrationTests** : Tests d'intégration (10 tests)
+
+### Couverture FSAssemblerTests :
+
+- **AssemblerBasicTests** : Tests de base de l'assembleur (18 tests)
+- **LoadInstructionTests** : Tests instructions de chargement (32 tests)
+- **IndexInstructionTests** : Tests instructions d'index (61 tests) (**NOUVEAU**)
+- **ArithmeticInstructionTests** : Tests arithmétiques (25 tests)
+- **LogicalInstructionTests** : Tests logiques (22 tests)
+- **JumpInstructionTests** : Tests de sauts (28 tests)
+- **StoreTransferInstructionTests** : Tests stockage/transfert (20 tests)
+- **StackSubroutineInstructionTests** : Tests pile/sous-routines (24 tests)
+- **DataAndLabelTests** : Tests données et labels (18 tests)
+- **AssemblerIntegrationTests** : Tests d'intégration assembleur (15 tests)
 
 ### Points de test :
 
@@ -252,6 +399,8 @@ La suite de tests **FSCPUTests** contient **116+ tests** couvrant :
 - Sauts conditionnels
 - Pile et sous-routines
 - Système mémoire authentique
+- **Instructions d'index** : Tous les modes d'adressage
+- **Programmes réalistes** : Copie de tableaux, accès structures, etc.
 
   Dans les tests unitaires (pas ceux d'intégration), il faut utiliser "_cpu.Start(false);" avec l'argument "false" pour que le timer ne se déclenche pas.
   On veut pouvoir contrôler ce qui est executé, donc ne pas risquer de passer à l'instruction suivante alors que l'on veut tester l'execution de l'instruction
@@ -263,7 +412,7 @@ La suite de tests **FSCPUTests** contient **116+ tests** couvrant :
 
 - **Écran émulé** : Panel 320x200 avec rendu bitmap
 - **Contrôles CPU** : Start/Stop/Reset/ColdBoot/Step
-- **Affichage registres** : État en temps réel
+- **Affichage registres** : État en temps réel (incluant IDX1, IDX2, IDY1, IDY2)
 - **Dump mémoire** : RAM, bitmap, ROM
 - **Chargement** : Programmes .bin et démonstrations
 - **Métriques** : Performance CPU en temps réel
@@ -274,6 +423,7 @@ La suite de tests **FSCPUTests** contient **116+ tests** couvrant :
 - **Rendu optimisé** : BitmapRenderer pour performance
 - **Debug avancé** : Affichage multi-zones mémoire
 - **System calls** : Démonstrations interactives
+- **Registres d'index** : Affichage des 4 nouveaux registres
 
 ## Problématiques techniques résolues
 
@@ -290,17 +440,22 @@ La suite de tests **FSCPUTests** contient **116+ tests** couvrant :
 ### 3. Jeu d'instructions limité
 
 **Problème** : Seulement ~20 instructions
-**Solution** : Extension à 60+ instructions avec support 16 bits
+**Solution** : Extension à 80+ instructions avec support 16 bits et registres d'index
 
 ### 4. Tests insuffisants
 
 **Problème** : Couverture partielle
-**Solution** : 116+ tests couvrant tous les aspects
+**Solution** : 240+ tests assembleur + 116+ tests CPU couvrant tous les aspects
 
 ### 5. Rendu vidéo basique
 
 **Problème** : Affichage texte simple
 **Solution** : VideoController + BitmapRenderer authentique
+
+### 6. Adressage mémoire limité
+
+**Problème** : Pas d'adressage indexé avancé
+**Solution** : 4 registres d'index avec auto-increment, offset et transferts
 
 ## Développements futurs possibles
 
@@ -364,5 +519,5 @@ La suite de tests **FSCPUTests** contient **116+ tests** couvrant :
 - **Disposal pattern** : Nettoyage des ressources
 - **Error handling** : Gestion d'erreurs robuste
 
-Cette architecture offre une base solide pour un émulateur vintage performant et extensible, avec un timing authentique et une excellente couverture de tests.
+Cette architecture offre une base solide pour un émulateur vintage performant et extensible, avec un timing authentique, des instructions d'adressage indexé avancées et une excellente couverture de tests.
 

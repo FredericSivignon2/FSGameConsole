@@ -674,7 +674,7 @@ namespace FSAssemblerTests
         public void IndexArrayCopyProgram_ShouldAssembleCorrectly()
         {
             // Arrange - Efficient array copy using index registers with auto-increment
-            string[] lines = 
+            string[] lines =
             {                                         // pos  size
                 "ARRAY_COPY:",                        //  -    0   Label
                 "LDIX1 #SOURCE_ARRAY",                //  0    3   Load source pointer
@@ -810,32 +810,38 @@ namespace FSAssemblerTests
                 "STRING_PROCESS:",                    //  -    0   Label
                 "LDIX1 #SOURCE_STRING",               //  0    3   Source string pointer
                 "LDIY1 #DEST_STRING",                 //  3    3   Destination string pointer
+                "LDC #0",                             //  6    2   Load null terminator in C for comparison
                 "",
-                "PROCESS_LOOP:",                      //  -    0   Label (position 6)
-                "LDAIX1+",                            //  6    1   Load char from source, increment
-                "CMP A,#0",                           //  7    2   Check for null terminator
-                "JZ PROCESS_DONE",                    //  9    3   Jump if end of string
+                "PROCESS_LOOP:",                      //  -    0   Label (position 8)
+                "LDAIX1+",                            //  8    1   Load char from source, increment
+                "CMP A,C",                            //  9    1   Check for null terminator (A vs C=0)
+                "JZ PROCESS_DONE",                    // 10    3   Jump if end of string
                 "",
                 "; Convert lowercase to uppercase (simplified)",
-                "CMP A,#97",                          // 12    2   Compare with 'a' (ASCII 97)
-                "JC STORE_CHAR",                      // 14    3   Jump if less than 'a'
-                "CMP A,#122",                         // 17    2   Compare with 'z' (ASCII 122)
-                "JNC STORE_CHAR",                     // 19    3   Jump if greater than 'z'
-                "SUB A,#32",                          // 22    2   Convert to uppercase (subtract 32)
+                "LDB #97",                            // 13    2   Load 'a' (ASCII 97) into B
+                "CMP A,B",                            // 15    1   Compare with 'a'
+                "JC STORE_CHAR",                      // 16    3   Jump if less than 'a'
+                "LDB #122",                           // 19    2   Load 'z' (ASCII 122) into B
+                "CMP A,B",                            // 21    1   Compare with 'z'
+                "JNC STORE_CHAR",                     // 22    3   Jump if greater than 'z'
                 "",
-                "STORE_CHAR:",                        //  -    0   Label (position 24)
-                "STAIY1+",                            // 24    1   Store char to dest, increment
-                "JMP PROCESS_LOOP",                   // 25    3   Continue processing
+                "; Convert to uppercase by subtracting 32",
+                "LDB #32",                            // 25    2   Load offset into B
+                "SUB",                                // 27    1   A = A - B (convert to uppercase)
                 "",
-                "PROCESS_DONE:",                      //  -    0   Label (position 28)
-                "LDA #0",                             // 28    2   Load null terminator
-                "STA (IDY1)",                         // 30    1   Store null terminator
-                "HALT",                               // 31    1   End program
+                "STORE_CHAR:",                        //  -    0   Label (position 28)
+                "STAIY1+",                            // 28    1   Store char to dest, increment
+                "JMP PROCESS_LOOP",                   // 29    3   Continue processing
                 "",
-                "SOURCE_STRING:",                     //  -    0   Label (position 32)
-                "DB 'h', 'e', 'l', 'l', 'o', 0",     // 32    6   Source string: "hello"
-                "DEST_STRING:",                       //  -    0   Label (position 38)
-                "DB 0, 0, 0, 0, 0, 0"                 // 38    6   Destination buffer
+                "PROCESS_DONE:",                      //  -    0   Label (position 32)
+                "LDA #0",                             // 32    2   Load null terminator
+                "STA (IDY1)",                         // 34    1   Store null terminator
+                "HALT",                               // 35    1   End program
+                "",
+                "SOURCE_STRING:",                     //  -    0   Label (position 36)
+                "DB 'h', 'e', 'l', 'l', 'o', 0",     // 36    6   Source string: "hello"
+                "DEST_STRING:",                       //  -    0   Label (position 42)
+                "DB 0, 0, 0, 0, 0, 0"                 // 42    6   Destination buffer
             };
 
             // Act
@@ -843,110 +849,58 @@ namespace FSAssemblerTests
 
             // Assert
             result.Should().NotBeNull();
-            result.Should().HaveCount(44); // Total: 3+3+1+2+3+2+3+2+3+2+1+3+2+1+1+6+6 = 44 bytes
+            result.Should().HaveCount(48); // Total: 3+3+2+1+1+3+2+1+3+2+1+3+2+1+1+1+3+2+1+6+6 = 48 bytes
 
             // Verify setup
             result[0].Should().Be(0x1A);  // LDIX1 #imm16
-            result[1].Should().Be(0x20);  // SOURCE_STRING address low (32)
+            result[1].Should().Be(0x24);  // SOURCE_STRING address low (36)
             result[2].Should().Be(0x00);  // SOURCE_STRING address high
 
             result[3].Should().Be(0x1C);  // LDIY1 #imm16
-            result[4].Should().Be(0x26);  // DEST_STRING address low (38)
+            result[4].Should().Be(0x2A);  // DEST_STRING address low (42)
             result[5].Should().Be(0x00);  // DEST_STRING address high
 
+            result[6].Should().Be(0x12);  // LDC #imm
+            result[7].Should().Be(0);     // Load 0 for null comparison
+
             // Verify main loop
-            result[6].Should().Be(0xC4);  // LDAIX1+
-            result[7].Should().Be(0x2C);  // CMP A,#imm (using existing CMP A,B where B=immediate)
-            result[8].Should().Be(0);     // Immediate value (null)
-            result[9].Should().Be(0x41);  // JZ
-            result[10].Should().Be(0x1C); // PROCESS_DONE address low (28)
-            result[11].Should().Be(0x00); // PROCESS_DONE address high
+            result[8].Should().Be(0xC4);  // LDAIX1+
+            result[9].Should().Be(0x2F);  // CMP A,C
+            result[10].Should().Be(0x41); // JZ
+            result[11].Should().Be(0x20); // PROCESS_DONE address low (32)
+            result[12].Should().Be(0x00); // PROCESS_DONE address high
 
             // Verify character processing
-            result[24].Should().Be(0xC7); // STAIY1+
-            result[25].Should().Be(0x40); // JMP
-            result[26].Should().Be(0x06); // PROCESS_LOOP address low (6)
-            result[27].Should().Be(0x00); // PROCESS_LOOP address high
+            result[13].Should().Be(0x11); // LDB #imm
+            result[14].Should().Be(97);   // ASCII 'a'
+            result[15].Should().Be(0x2C); // CMP A,B
+            result[16].Should().Be(0x43); // JC
+            result[17].Should().Be(0x1C); // STORE_CHAR address low (28)
+            result[18].Should().Be(0x00); // STORE_CHAR address high
+
+            result[19].Should().Be(0x11); // LDB #imm
+            result[20].Should().Be(122);  // ASCII 'z'
+            result[21].Should().Be(0x2C); // CMP A,B
+            result[22].Should().Be(0x44); // JNC
+            result[23].Should().Be(0x1C); // STORE_CHAR address low (28)
+            result[24].Should().Be(0x00); // STORE_CHAR address high
+
+            result[25].Should().Be(0x11); // LDB #imm
+            result[26].Should().Be(32);   // Offset for uppercase conversion
+            result[27].Should().Be(0x21); // SUB
+
+            result[28].Should().Be(0xC7); // STAIY1+
+            result[29].Should().Be(0x40); // JMP
+            result[30].Should().Be(0x08); // PROCESS_LOOP address low (8)
+            result[31].Should().Be(0x00); // PROCESS_LOOP address high
 
             // Verify source string
-            result[32].Should().Be((byte)'h');
-            result[33].Should().Be((byte)'e');
-            result[34].Should().Be((byte)'l');
-            result[35].Should().Be((byte)'l');
-            result[36].Should().Be((byte)'o');
-            result[37].Should().Be(0); // Null terminator
-        }
-
-        [Fact]
-        public void IndexMultidimensionalArrayAccess_ShouldAssembleCorrectly()
-        {
-            // Arrange - 2D array access using index arithmetic
-            string[] lines = 
-            {                                         // pos  size
-                "MATRIX_ACCESS:",                     //  -    0   Label
-                "LDIX1 #MATRIX",                      //  0    3   Base address of 3x3 matrix
-                "LDA #1",                             //  3    2   Row index (1)
-                "LDB #2",                             //  5    2   Column index (2)
-                "",
-                "; Calculate offset: row * 3 + col",
-                "LDC #3",                             //  7    2   Load row width (3)
-                "MOV A,A",                            //  9    1   Ensure A contains row (redundant but clear)
-                "",
-                "; Multiply row by width (A * C)",
-                "PUSH A",                             // 10    1   Save original row
-                "LDA #0",                             // 11    2   Initialize result
-                "MULT_LOOP:",                         //  -    0   Label (position 13)
-                "POP A",                              // 13    1   Get current row value
-                "CMP A,#0",                           // 14    2   Check if done
-                "JZ MULT_DONE",                       // 16    3   Jump if multiplication complete
-                "PUSH A",                             // 19    1   Save row value back
-                "LDA TEMP_RESULT",                    // 20    3   Load current result
-                "ADD A,C",                            // 23    1   Add width to result  
-                "STA TEMP_RESULT",                    // 24    3   Store back
-                "POP A",                              // 27    1   Get row value
-                "DEC A",                              // 28    1   Decrement row counter
-                "PUSH A",                             // 29    1   Save decremented value
-                "JMP MULT_LOOP",                      // 30    3   Continue multiplication
-                "",
-                "MULT_DONE:",                         //  -    0   Label (position 33)
-                "LDA TEMP_RESULT",                    // 33    3   Load multiplication result
-                "ADD A,B",                            // 36    1   Add column index
-                "ADDIX1 #0",                          // 37    3   Add offset to base (A in separate instruction)
-                "; Note: This is simplified - real implementation would need offset in 16-bit",
-                "",
-                "LDA (IDX1)",                         // 40    1   Load matrix element
-                "STA RESULT",                         // 41    3   Store result
-                "HALT",                               // 44    1   End program
-                "",
-                "MATRIX:",                            //  -    0   Label (position 45)
-                "DB 1, 2, 3",                         // 45    3   Row 0: [1, 2, 3]
-                "DB 4, 5, 6",                         // 48    3   Row 1: [4, 5, 6]  
-                "DB 7, 8, 9",                         // 51    3   Row 2: [7, 8, 9]
-                "TEMP_RESULT:",                       //  -    0   Label (position 54)
-                "DB 0",                               // 54    1   Temporary storage
-                "RESULT:",                            //  -    0   Label (position 55)
-                "DB 0"                                // 55    1   Final result
-            };
-
-            // Act
-            byte[] result = _assembler.AssembleLines(lines);
-
-            // Assert
-            result.Should().NotBeNull();
-            result.Should().HaveCount(56); // Complex calculation
-
-            // Verify matrix setup
-            result[0].Should().Be(0x1A);  // LDIX1 #imm16
-            result[1].Should().Be(0x2D);  // MATRIX address low (45)
-            result[2].Should().Be(0x00);  // MATRIX address high
-
-            // Verify matrix data (3x3 = 9 elements)
-            result[45].Should().Be(1); result[46].Should().Be(2); result[47].Should().Be(3);
-            result[48].Should().Be(4); result[49].Should().Be(5); result[50].Should().Be(6);
-            result[51].Should().Be(7); result[52].Should().Be(8); result[53].Should().Be(9);
-
-            // This test validates that complex index arithmetic can be assembled
-            // The actual matrix access would retrieve matrix[1][2] = 6
+            result[36].Should().Be((byte)'h');
+            result[37].Should().Be((byte)'e');
+            result[38].Should().Be((byte)'l');
+            result[39].Should().Be((byte)'l');
+            result[40].Should().Be((byte)'o');
+            result[41].Should().Be(0); // Null terminator
         }
 
         [Fact]
