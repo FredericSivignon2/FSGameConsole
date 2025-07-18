@@ -62,6 +62,7 @@ public class Assembler
         
         // Stack instructions
         { "PUSH", 0x70 }, { "POP", 0x71 },
+        { "PUSH16", 0x72 }, { "POP16", 0x73 },
         
         // Register transfer instructions
         { "MOV", 0xA0 }, { "SWP", 0xA6 },
@@ -250,7 +251,7 @@ public class Assembler
             "STA" or "STB" or "STC" or "STD" or "STDA" or "STDB" or "CALL" => 3,
 
             // Stack and other single-byte instructions
-            "PUSH" or "POP" or "MOV" or "SWP" => 1,
+            "PUSH" or "POP" or "PUSH16" or "POP16" or "MOV" or "SWP" => 1,
 
             _ => throw new AssemblerException($"Unknown instruction: {mnemonic}")
         };
@@ -401,6 +402,8 @@ public class Assembler
 
             case "PUSH":
             case "POP":
+            case "PUSH16":
+            case "POP16":
                 return AssembleStackInstruction(mnemonic, parts);
 
             case "MOV":
@@ -939,12 +942,12 @@ public class Assembler
         {
             ("PUSH", "A") => 0x70,
             ("POP", "A") => 0x71,
-            ("PUSH", "DA") => 0x72,
-            ("POP", "DA") => 0x73,
+            ("PUSH16", "DA") => 0x72,
+            ("POP16", "DA") => 0x73,
             ("PUSH", "B") => 0x74,
             ("POP", "B") => 0x75,
-            ("PUSH", "DB") => 0x76,
-            ("POP", "DB") => 0x77,
+            ("PUSH16", "DB") => 0x76,
+            ("POP16", "DB") => 0x77,
             ("PUSH", "C") => 0x78,
             ("POP", "C") => 0x79,
             _ => throw new AssemblerException($"Invalid {mnemonic} register: {register}")

@@ -218,14 +218,14 @@ namespace FSAssemblerTests
                 "PUSH A",         //  9    1   Push all values onto stack
                 "PUSH B",         // 10    1   
                 "PUSH C",         // 11    1   
-                "PUSH DA",        // 12    1   
+                "PUSH16 DA",      // 12    1   
                 "",
                 "LDA #99",        // 13    2   Overwrite registers
                 "LDB #88",        // 15    2   
                 "LDC #77",        // 17    2   
                 "LDDA #0x5678",   // 19    3   
                 "",
-                "POP DA",         // 22    1   Restore from stack (reverse order)
+                "POP16 DA",       // 22    1   Restore from stack (reverse order)
                 "POP C",          // 23    1   
                 "POP B",          // 24    1   
                 "POP A",          // 25    1   
@@ -469,8 +469,8 @@ namespace FSAssemblerTests
                 "SWP A,B", "SWP A,C",
                 "",
                 "; Stack & Subroutines",
-                "PUSH A", "PUSH DA", "CALL SUB1",
-                "POP DA", "POP A",
+                "PUSH A", "PUSH16 DA", "CALL SUB1",
+                "POP16 DA", "POP A",
                 "HALT",
                 "",
                 "SUB1:",

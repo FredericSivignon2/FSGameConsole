@@ -113,10 +113,10 @@ namespace FSAssemblerTests
         #region Stack Instructions - 16-bit
 
         [Fact]
-        public void PUSH_DA_ShouldGenerateCorrectOpcode()
+        public void PUSH16_DA_ShouldGenerateCorrectOpcode()
         {
             // Arrange
-            string[] lines = { "PUSH DA" };
+            string[] lines = { "PUSH16 DA" };
 
             // Act
             byte[] result = _assembler.AssembleLines(lines);
@@ -124,14 +124,14 @@ namespace FSAssemblerTests
             // Assert
             result.Should().NotBeNull();
             result.Should().HaveCount(1);
-            result[0].Should().Be(0x72); // PUSH DA opcode
+            result[0].Should().Be(0x72); // PUSH16 DA opcode
         }
 
         [Fact]
-        public void POP_DA_ShouldGenerateCorrectOpcode()
+        public void POP16_DA_ShouldGenerateCorrectOpcode()
         {
             // Arrange
-            string[] lines = { "POP DA" };
+            string[] lines = { "POP16 DA" };
 
             // Act
             byte[] result = _assembler.AssembleLines(lines);
@@ -139,14 +139,14 @@ namespace FSAssemblerTests
             // Assert
             result.Should().NotBeNull();
             result.Should().HaveCount(1);
-            result[0].Should().Be(0x73); // POP DA opcode
+            result[0].Should().Be(0x73); // POP16 DA opcode
         }
 
         [Fact]
-        public void PUSH_DB_ShouldGenerateCorrectOpcode()
+        public void PUSH16_DB_ShouldGenerateCorrectOpcode()
         {
             // Arrange
-            string[] lines = { "PUSH DB" };
+            string[] lines = { "PUSH16 DB" };
 
             // Act
             byte[] result = _assembler.AssembleLines(lines);
@@ -154,14 +154,14 @@ namespace FSAssemblerTests
             // Assert
             result.Should().NotBeNull();
             result.Should().HaveCount(1);
-            result[0].Should().Be(0x76); // PUSH DB opcode
+            result[0].Should().Be(0x76); // PUSH16 DB opcode
         }
 
         [Fact]
-        public void POP_DB_ShouldGenerateCorrectOpcode()
+        public void POP16_DB_ShouldGenerateCorrectOpcode()
         {
             // Arrange
-            string[] lines = { "POP DB" };
+            string[] lines = { "POP16 DB" };
 
             // Act
             byte[] result = _assembler.AssembleLines(lines);
@@ -169,7 +169,7 @@ namespace FSAssemblerTests
             // Assert
             result.Should().NotBeNull();
             result.Should().HaveCount(1);
-            result[0].Should().Be(0x77); // POP DB opcode
+            result[0].Should().Be(0x77); // POP16 DB opcode
         }
 
         #endregion
@@ -327,7 +327,7 @@ namespace FSAssemblerTests
             {
                 "push a",
                 "POP B",
-                "push da",
+                "push16 da",
                 "call 100",
                 "RET"
             };
@@ -340,7 +340,7 @@ namespace FSAssemblerTests
             result.Should().HaveCount(7);
             result[0].Should().Be(0x70); // PUSH A
             result[1].Should().Be(0x75); // POP B
-            result[2].Should().Be(0x72); // PUSH DA
+            result[2].Should().Be(0x72); // PUSH16 DA
             result[3].Should().Be(0x60); // CALL opcode
             result[4].Should().Be(100);  // Low byte
             result[5].Should().Be(0x00); // High byte
@@ -355,7 +355,7 @@ namespace FSAssemblerTests
             {
                 "  PUSH   A  ",
                 "\tPOP\tB\t",
-                "PUSH  DA"
+                "PUSH16  DA"
             };
 
             // Act
@@ -366,7 +366,7 @@ namespace FSAssemblerTests
             result.Should().HaveCount(3);
             result[0].Should().Be(0x70); // PUSH A
             result[1].Should().Be(0x75); // POP B
-            result[2].Should().Be(0x72); // PUSH DA
+            result[2].Should().Be(0x72); // PUSH16 DA
         }
 
         #endregion
@@ -463,6 +463,58 @@ namespace FSAssemblerTests
                   .WithMessage("*Label non défini*");
         }
 
+        [Fact]
+        public void PUSH16_WithInvalidRegister_ShouldThrowException()
+        {
+            // Arrange
+            string[] lines = { "PUSH16 A" };
+
+            // Act & Assert
+            var action = () => _assembler.AssembleLines(lines);
+            action.Should().Throw<AssemblerException>()
+                  .WithInnerException<AssemblerException>()
+                  .WithMessage("*Invalid PUSH16 register*");
+        }
+
+        [Fact]
+        public void POP16_WithInvalidRegister_ShouldThrowException()
+        {
+            // Arrange
+            string[] lines = { "POP16 B" };
+
+            // Act & Assert
+            var action = () => _assembler.AssembleLines(lines);
+            action.Should().Throw<AssemblerException>()
+                  .WithInnerException<AssemblerException>()
+                  .WithMessage("*Invalid POP16 register*");
+        }
+
+        [Fact]
+        public void PUSH16_WithoutRegister_ShouldThrowException()
+        {
+            // Arrange
+            string[] lines = { "PUSH16" };
+
+            // Act & Assert
+            var action = () => _assembler.AssembleLines(lines);
+            action.Should().Throw<AssemblerException>()
+                  .WithInnerException<AssemblerException>()
+                  .WithMessage("*requires a register*");
+        }
+
+        [Fact]
+        public void POP16_WithoutRegister_ShouldThrowException()
+        {
+            // Arrange
+            string[] lines = { "POP16" };
+
+            // Act & Assert
+            var action = () => _assembler.AssembleLines(lines);
+            action.Should().Throw<AssemblerException>()
+                  .WithInnerException<AssemblerException>()
+                  .WithMessage("*requires a register*");
+        }
+
         #endregion
 
         #region Mixed Instructions Test
@@ -475,9 +527,9 @@ namespace FSAssemblerTests
             {
                 "PUSH A",
                 "PUSH B",
-                "PUSH DA",
+                "PUSH16 DA",
                 "CALL 0x1000",
-                "POP DA",
+                "POP16 DA",
                 "POP B",
                 "POP A",
                 "RET"
@@ -491,11 +543,11 @@ namespace FSAssemblerTests
             result.Should().HaveCount(10);
             result[0].Should().Be(0x70); // PUSH A
             result[1].Should().Be(0x74); // PUSH B
-            result[2].Should().Be(0x72); // PUSH DA
+            result[2].Should().Be(0x72); // PUSH16 DA
             result[3].Should().Be(0x60); // CALL opcode
             result[4].Should().Be(0x00); // Low byte of address
             result[5].Should().Be(0x10); // High byte of address
-            result[6].Should().Be(0x73); // POP DA
+            result[6].Should().Be(0x73); // POP16 DA
             result[7].Should().Be(0x75); // POP B
             result[8].Should().Be(0x71); // POP A
             result[9].Should().Be(0x61); // RET

@@ -155,10 +155,10 @@ namespace FSAssemblerTests
         }
 
         [Fact]
-        public void PUSH_DA_ShouldGenerateCorrectOpcode()
+        public void PUSH16_DA_ShouldGenerateCorrectOpcode()
         {
             // Arrange
-            string[] lines = { "PUSH DA" };
+            string[] lines = { "PUSH16 DA" };
 
             // Act
             byte[] result = _assembler.AssembleLines(lines);
@@ -170,10 +170,10 @@ namespace FSAssemblerTests
         }
 
         [Fact]
-        public void POP_DA_ShouldGenerateCorrectOpcode()
+        public void POP16_DA_ShouldGenerateCorrectOpcode()
         {
             // Arrange
-            string[] lines = { "POP DA" };
+            string[] lines = { "POP16 DA" };
 
             // Act
             byte[] result = _assembler.AssembleLines(lines);
@@ -215,10 +215,10 @@ namespace FSAssemblerTests
         }
 
         [Fact]
-        public void PUSH_DB_ShouldGenerateCorrectOpcode()
+        public void PUSH16_DB_ShouldGenerateCorrectOpcode()
         {
             // Arrange
-            string[] lines = { "PUSH DB" };
+            string[] lines = { "PUSH16 DB" };
 
             // Act
             byte[] result = _assembler.AssembleLines(lines);
@@ -230,10 +230,10 @@ namespace FSAssemblerTests
         }
 
         [Fact]
-        public void POP_DB_ShouldGenerateCorrectOpcode()
+        public void POP16_DB_ShouldGenerateCorrectOpcode()
         {
             // Arrange
-            string[] lines = { "POP DB" };
+            string[] lines = { "POP16 DB" };
 
             // Act
             byte[] result = _assembler.AssembleLines(lines);

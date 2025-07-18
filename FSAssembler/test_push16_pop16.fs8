@@ -1,0 +1,22 @@
+; Test file for PUSH16 and POP16 instructions
+; This tests the newly added 16-bit stack instructions
+
+MAIN:
+    ; Load some values into 16-bit registers
+    LDDA #0x1234
+    LDDB #0x5678
+    
+    ; Push 16-bit registers onto stack
+    PUSH16 DA      ; Push DA (0x1234)
+    PUSH16 DB      ; Push DB (0x5678)
+    
+    ; Clear the registers
+    LDDA #0x0000
+    LDDB #0x0000
+    
+    ; Pop values back from stack (LIFO order)
+    POP16 DB       ; Should restore 0x5678 to DB
+    POP16 DA       ; Should restore 0x1234 to DA
+    
+    ; Halt the program
+    HALT
