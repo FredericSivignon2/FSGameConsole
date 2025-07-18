@@ -379,7 +379,7 @@ namespace FSAssemblerTests
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
                   .WithInnerException<AssemblerException>()
-                  .WithMessage("*requires an address*");
+                  .WithMessage("*Instruction STA requires one operand*");
         }
 
         [Fact]

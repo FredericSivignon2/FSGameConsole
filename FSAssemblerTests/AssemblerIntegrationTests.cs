@@ -662,7 +662,7 @@ namespace FSAssemblerTests
 
             // Assert
             result.Should().NotBeNull();
-            result.Length.Should().Be(2009); // 3+3+500*(1+1+1+1)+1 = 2009 bytes total
+            result.Length.Should().Be(2007); // 3+3+500*(1+1+1+1)+1 = 2007 bytes total
             stopwatch.ElapsedMilliseconds.Should().BeLessThan(1000); // Should complete in under 1 second
         }
 

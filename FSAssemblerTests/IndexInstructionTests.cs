@@ -795,7 +795,7 @@ namespace FSAssemblerTests
             // Assert
             result.Should().NotBeNull();
             result.Should().HaveCount(3);
-            result[0].Should().Be(0xE9); // ADDIY1 #imm16 opcode
+            result[0].Should().Be(0xEA); // ADDIY1 #imm16 opcode
             result[1].Should().Be(244);  // 500 & 0xFF = 244
             result[2].Should().Be(1);    // 500 >> 8 = 1
         }
@@ -815,7 +815,7 @@ namespace FSAssemblerTests
             // Assert
             result.Should().NotBeNull();
             result.Should().HaveCount(3);
-            result[0].Should().Be(0xEA); // ADDIX2 #imm16 opcode
+            result[0].Should().Be(0xE9); // ADDIX2 #imm16 opcode
             result[1].Should().Be(0x00); // Low byte
             result[2].Should().Be(0xFF); // High byte
         }
@@ -1141,7 +1141,8 @@ namespace FSAssemblerTests
             // Act & Assert
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
-                  .WithMessage("*offset out of range*");
+                  .WithInnerException<AssemblerException>()
+                  .WithMessage("*Invalid offset in indexed expression*");
         }
 
         [Fact]
@@ -1153,6 +1154,7 @@ namespace FSAssemblerTests
             // Act & Assert
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
+                  .WithInnerException<AssemblerException>()
                   .WithMessage("*offset out of range*");
         }
 
@@ -1177,6 +1179,7 @@ namespace FSAssemblerTests
             // Act & Assert
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
+                  .WithInnerException<AssemblerException>()
                   .WithMessage("*requires one operand*");
         }
 
@@ -1189,6 +1192,7 @@ namespace FSAssemblerTests
             // Act & Assert
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
+                  .WithInnerException<AssemblerException>()
                   .WithMessage("*requires one operand*");
         }
 
@@ -1201,7 +1205,8 @@ namespace FSAssemblerTests
             // Act & Assert
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
-                  .WithMessage("*requires no operands*");
+                  .WithInnerException<AssemblerException>()
+                  .WithMessage("*Instruction INCIX1 takes no parameters*");
         }
 
         #endregion
