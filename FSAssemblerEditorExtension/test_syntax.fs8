@@ -1,0 +1,96 @@
+; Test file for FS8 assembler syntax highlighting
+; This file demonstrates various FS8 syntax elements
+
+; === Main Program ===
+Startup:
+    ; Load welcome message address
+    LDDA WelcomeMessage
+    CALL PrintString
+    HALT
+
+; === String Print Function ===
+PrintString:
+    PUSH DA                ; Save DA register
+    
+PrintLoop:
+    LDA (DA)               ; Load character from indexed address
+    CMP A, 0x00            ; Compare with null terminator
+    JZ EndPrint            ; Jump if zero
+    
+    ; System call to print character
+    LDB A                  ; Move character to B register
+    LDA #1                 ; System call code #1 = PRINT_CHAR
+    SYS                    ; Execute system call
+    
+    INCIX1                 ; Increment index register
+    JMP PrintLoop          ; Continue loop
+    
+EndPrint:
+    POP DA                 ; Restore DA register
+    RET                    ; Return from subroutine
+
+; === Memory Copy Function ===
+MemCopy:
+    LDIX1 #SourceBuffer    ; Load source address
+    LDIY1 #DestBuffer      ; Load destination address
+    LDB #10                ; Load counter
+    
+CopyLoop:
+    LDAIX1+                ; Load and auto-increment source
+    STAIY1+                ; Store and auto-increment destination
+    DEC B                  ; Decrement counter
+    JNZ CopyLoop           ; Continue if not zero
+    RET
+
+; === Arithmetic Demo ===
+ArithmeticDemo:
+    LDA #100               ; Load immediate value
+    LDB #50                ; Load another value
+    ADD A, B               ; Add B to A
+    STA ResultValue        ; Store result
+    
+    ; 16-bit arithmetic
+    LDDA #0x1000           ; Load 16-bit value
+    LDDB #0x0500           ; Load another 16-bit value
+    ADD16 DA, DB           ; 16-bit addition
+    STDA Result16          ; Store 16-bit result
+    RET
+
+; === Data Section ===
+WelcomeMessage:
+    DB "Welcome to FS8!", 0x0A, 0x00
+
+SourceBuffer:
+    DB 1, 2, 3, 4, 5, 6, 7, 8, 9, 10
+
+DestBuffer:
+    DB 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
+
+ResultValue:
+    DB 0
+
+Result16:
+    DB 0, 0
+
+; === Advanced Index Examples ===
+IndexDemo:
+    LDIX1 #0x8000          ; Load video memory base
+    LDIY1 #ColorData       ; Load color data
+    
+    ; Draw pixel at offset
+    LDA (IDY1+2)           ; Load color from offset
+    STA (IDX1+100)         ; Store to video memory offset
+    
+    ; Auto-increment example
+    LDB #16                ; Counter for 16 pixels
+PixelLoop:
+    LDAIY1+                ; Load color and increment pointer
+    STAIX1+                ; Store pixel and increment pointer
+    DEC B                  ; Decrement counter
+    JNZ PixelLoop          ; Continue loop
+    
+    RET
+
+ColorData:
+    DB 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08
+    DB 0x09, 0x0A, 0x0B, 0x0C, 0x0D, 0x0E, 0x0F, 0x10
