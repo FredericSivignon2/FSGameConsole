@@ -266,7 +266,8 @@ public class Assembler
         {
             if (!string.IsNullOrWhiteSpace(token))
             {
-                values.Add(ParseValue(token.Trim()));
+                var tokenValues = ParseValue(token.Trim());
+                values.AddRange(tokenValues);
             }
         }
 
@@ -277,23 +278,24 @@ public class Assembler
     {
         var tokens = new List<string>();
         var currentToken = new StringBuilder();
-        bool inQuotes = false;
+        bool inSingleQuotes = false;
+        bool inDoubleQuotes = false;
 
         for (int i = 0; i < dataString.Length; i++)
         {
             char c = dataString[i];
 
-            if (c == '\'' && !inQuotes)
+            if (c == '\'' && !inDoubleQuotes)
             {
-                inQuotes = true;
+                inSingleQuotes = !inSingleQuotes;
                 currentToken.Append(c);
             }
-            else if (c == '\'' && inQuotes)
+            else if (c == '"' && !inSingleQuotes)
             {
-                inQuotes = false;
+                inDoubleQuotes = !inDoubleQuotes;
                 currentToken.Append(c);
             }
-            else if (c == ',' && !inQuotes)
+            else if (c == ',' && !inSingleQuotes && !inDoubleQuotes)
             {
                 // Add current token if it has content
                 string tokenStr = currentToken.ToString().Trim();
@@ -303,11 +305,11 @@ public class Assembler
                 }
                 currentToken.Clear();
             }
-            else if (!char.IsWhiteSpace(c) || inQuotes)
+            else if (!char.IsWhiteSpace(c) || inSingleQuotes || inDoubleQuotes)
             {
                 currentToken.Append(c);
             }
-            else if (char.IsWhiteSpace(c) && currentToken.Length > 0 && !inQuotes)
+            else if (char.IsWhiteSpace(c) && currentToken.Length > 0 && !inSingleQuotes && !inDoubleQuotes)
             {
                 // Keep building the token, just ignore the whitespace
                 // (we'll trim it later)
@@ -502,7 +504,7 @@ public class Assembler
             // Immediate load
             byte opcode = _mnemonics[mnemonic];
             bytes.Add(opcode);
-            byte value = ParseValue(operand.Substring(1));
+            byte value = ParseSingleValue(operand.Substring(1));
             bytes.Add(value);
         }
         else if (operand.StartsWith("(") && operand.EndsWith(")"))
@@ -754,21 +756,26 @@ public class Assembler
 
         string operand = parts[1];
 
-        if (!operand.StartsWith('#'))
-            throw new AssemblerException($"Index load instruction {mnemonic} requires immediate value (format: {mnemonic} #value)");
-
-        // Index register load with 16-bit immediate value
-        byte opcode = _mnemonics[mnemonic];
-        bytes.Add(opcode);
-
-        ushort value = 0;
-        if (!GetLabelReference(operand.Substring(1), out value))
+        if (operand.StartsWith('#'))
         {
-            value = ParseValue16(operand.Substring(1));
-        }
+            // 16-bit immediate load (like LDIX1 #0x1234)
+            byte opcode = _mnemonics[mnemonic];
+            bytes.Add(opcode);
 
-        bytes.Add((byte)(value & 0xFF));        // Low byte first (little-endian)
-        bytes.Add((byte)((value >> 8) & 0xFF)); // High byte second
+            ushort value = ParseValue16(operand.Substring(1));
+            bytes.Add((byte)(value & 0xFF));        // Low byte first (little-endian)
+            bytes.Add((byte)((value >> 8) & 0xFF)); // High byte second
+        }
+        else
+        {
+            // Address/label load (like LDIX1 WelcomeMessage) - same as LDDA/LDDB behavior
+            byte opcode = _mnemonics[mnemonic];
+            bytes.Add(opcode);
+
+            ushort address = ParseAddress(operand, currentAddress);
+            bytes.Add((byte)(address & 0xFF));      // Low byte first (little-endian)
+            bytes.Add((byte)((address >> 8) & 0xFF)); // High byte second
+        }
 
         return bytes;
     }
@@ -1033,12 +1040,12 @@ public class Assembler
         {
             char c = line[i];
 
-            if (c == '\'' && !inString)
+            if ((c == '\'' || c == '"') && !inString)
             {
                 inString = true;
                 currentPart.Append(c);
             }
-            else if (c == '\'' && inString)
+            else if ((c == '\'' || c == '"') && inString)
             {
                 inString = false;
                 currentPart.Append(c);
@@ -1086,20 +1093,38 @@ public class Assembler
         return parts.ToArray();
     }
 
-    private byte ParseValue(string value)
+    private List<byte> ParseValue(string value)
     {
         value = value.Trim();
+        var values = new List<byte>();
 
-        if (value.StartsWith('\'') && value.EndsWith('\'') && value.Length == 3)
+        // Handle string literals with double quotes
+        if (value.StartsWith('"') && value.EndsWith('"') && value.Length >= 2)
         {
-            return (byte)value[1];
+            string stringContent = value.Substring(1, value.Length - 2);
+            foreach (char c in stringContent)
+            {
+                values.Add((byte)c);
+            }
+            // Add null terminator for strings
+            values.Add(0);
+            return values;
         }
 
+        // Handle single character literals with single quotes
+        if (value.StartsWith('\'') && value.EndsWith('\'') && value.Length == 3)
+        {
+            values.Add((byte)value[1]);
+            return values;
+        }
+
+        // Handle hexadecimal values (0x prefix)
         if (value.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
         {
             try
             {
-                return Convert.ToByte(value.Substring(2), 16);
+                values.Add(Convert.ToByte(value.Substring(2), 16));
+                return values;
             }
             catch (OverflowException)
             {
@@ -1111,11 +1136,13 @@ public class Assembler
             }
         }
 
+        // Handle hexadecimal values ($ prefix)
         if (value.StartsWith("$"))
         {
             try
             {
-                return Convert.ToByte(value.Substring(1), 16);
+                values.Add(Convert.ToByte(value.Substring(1), 16));
+                return values;
             }
             catch (OverflowException)
             {
@@ -1127,9 +1154,11 @@ public class Assembler
             }
         }
 
+        // Handle decimal values
         try
         {
-            return Convert.ToByte(value);
+            values.Add(Convert.ToByte(value));
+            return values;
         }
         catch (OverflowException)
         {
@@ -1322,6 +1351,65 @@ public class Assembler
 
             machineCode[position] = (byte)(address & 0xFF);
             machineCode[position + 1] = (byte)((address >> 8) & 0xFF);
+        }
+    }
+
+    private byte ParseSingleValue(string value)
+    {
+        value = value.Trim();
+
+        // Handle single character literals with single quotes
+        if (value.StartsWith('\'') && value.EndsWith('\'') && value.Length == 3)
+        {
+            return (byte)value[1];
+        }
+
+        // Handle hexadecimal values (0x prefix)
+        if (value.StartsWith("0x", StringComparison.OrdinalIgnoreCase))
+        {
+            try
+            {
+                return Convert.ToByte(value.Substring(2), 16);
+            }
+            catch (OverflowException)
+            {
+                throw new OverflowException("Value was either too large or too small for an unsigned byte.");
+            }
+            catch (FormatException)
+            {
+                throw new AssemblerException($"Invalid hexadecimal format: {value}");
+            }
+        }
+
+        // Handle hexadecimal values ($ prefix)
+        if (value.StartsWith("$"))
+        {
+            try
+            {
+                return Convert.ToByte(value.Substring(1), 16);
+            }
+            catch (OverflowException)
+            {
+                throw new OverflowException("Value was either too large or too small for an unsigned byte.");
+            }
+            catch (FormatException)
+            {
+                throw new AssemblerException($"Invalid hexadecimal format: {value}");
+            }
+        }
+
+        // Handle decimal values
+        try
+        {
+            return Convert.ToByte(value);
+        }
+        catch (OverflowException)
+        {
+            throw new OverflowException("Value was either too large or too small for an unsigned byte.");
+        }
+        catch (FormatException)
+        {
+            throw new AssemblerException($"Invalid numeric format: {value}");
         }
     }
 }

@@ -137,6 +137,89 @@ namespace FSAssemblerTests
             result[2].Should().Be(30);
         }
 
+        [Fact]
+        public void DB_WithStringLiteral_ShouldGenerateCorrectDataWithNullTerminator()
+        {
+            // Arrange
+            string[] lines = { "DB \"Hello\"" };
+
+            // Act
+            byte[] result = _assembler.AssembleLines(lines);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.Should().HaveCount(6); // "Hello" + null terminator
+            result[0].Should().Be((byte)'H'); // 72
+            result[1].Should().Be((byte)'e'); // 101
+            result[2].Should().Be((byte)'l'); // 108
+            result[3].Should().Be((byte)'l'); // 108
+            result[4].Should().Be((byte)'o'); // 111
+            result[5].Should().Be(0);         // null terminator
+        }
+
+        [Fact]
+        public void DB_WithMixedStringAndValues_ShouldGenerateCorrectData()
+        {
+            // Arrange
+            string[] lines = { "DB \"Hi\", 42, 'A'" };
+
+            // Act
+            byte[] result = _assembler.AssembleLines(lines);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.Should().HaveCount(5); // "Hi" + null + 42 + 'A'
+            result[0].Should().Be((byte)'H'); // 72
+            result[1].Should().Be((byte)'i'); // 105
+            result[2].Should().Be(0);         // null terminator for string
+            result[3].Should().Be(42);        // decimal value
+            result[4].Should().Be((byte)'A'); // character value
+        }
+
+        [Fact]
+        public void DB_WithEmptyString_ShouldGenerateNullTerminatorOnly()
+        {
+            // Arrange
+            string[] lines = { "DB \"\"" };
+
+            // Act
+            byte[] result = _assembler.AssembleLines(lines);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.Should().HaveCount(1);
+            result[0].Should().Be(0); // null terminator only
+        }
+
+        [Fact]
+        public void DB_WithStringContainingSpaces_ShouldHandleSpacesCorrectly()
+        {
+            // Arrange
+            string[] lines = { "DB \"FS System v1.0\"" };
+
+            // Act
+            byte[] result = _assembler.AssembleLines(lines);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.Should().HaveCount(15); // "FS System v1.0" (14 chars) + null terminator
+            result[0].Should().Be((byte)'F');
+            result[1].Should().Be((byte)'S');
+            result[2].Should().Be((byte)' '); // space character
+            result[3].Should().Be((byte)'S');
+            result[4].Should().Be((byte)'y');
+            result[5].Should().Be((byte)'s');
+            result[6].Should().Be((byte)'t');
+            result[7].Should().Be((byte)'e');
+            result[8].Should().Be((byte)'m');
+            result[9].Should().Be((byte)' '); // space character
+            result[10].Should().Be((byte)'v');
+            result[11].Should().Be((byte)'1');
+            result[12].Should().Be((byte)'.');
+            result[13].Should().Be((byte)'0');
+            result[14].Should().Be(0); // null terminator
+        }
+
         #endregion
 
         #region Label Tests
@@ -547,6 +630,94 @@ namespace FSAssemblerTests
             result[20].Should().Be(108);  // 'l'
             result[21].Should().Be(111);  // 'o'
             result[22].Should().Be(0);    // null terminator
+        }
+
+        #endregion
+
+        #region ROM-Style Program Tests
+
+        [Fact]
+        public void DB_ROMStyle_WelcomeMessage_ShouldAssembleCorrectly()
+        {
+            // Arrange - Test inspired by the ROM line: DB "FS System v1.0"
+            string[] lines = 
+            {
+                "WelcomeMessage:",
+                "DB \"FS System v1.0\""
+            };
+
+            // Act
+            byte[] result = _assembler.AssembleLines(lines);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.Should().HaveCount(15); // 14 characters + null terminator
+
+            // Verify the exact string content
+            result[0].Should().Be(0x46); // 'F'
+            result[1].Should().Be(0x53); // 'S'
+            result[2].Should().Be(0x20); // ' '
+            result[3].Should().Be(0x53); // 'S'
+            result[4].Should().Be(0x79); // 'y'
+            result[5].Should().Be(0x73); // 's'
+            result[6].Should().Be(0x74); // 't'
+            result[7].Should().Be(0x65); // 'e'
+            result[8].Should().Be(0x6D); // 'm'
+            result[9].Should().Be(0x20); // ' '
+            result[10].Should().Be(0x76); // 'v'
+            result[11].Should().Be(0x31); // '1'
+            result[12].Should().Be(0x2E); // '.'
+            result[13].Should().Be(0x30); // '0'
+            result[14].Should().Be(0x00); 
+        }
+
+        [Fact] 
+        public void CompleteROMStyleProgram_ShouldAssembleWithStringSupport()
+        {
+            // Arrange - Simplified version of ROM startup with string support
+            string[] lines = 
+            {                         // pos  size
+                "Startup:",           //  -    0   Label
+                "LDDA WelcomeMessage",//  0    3   Load message address
+                "CALL PrintString",   //  3    3   Call print function  
+                "HALT",               //  6    1   Halt program
+                "",
+                "PrintString:",       //  -    0   Label (position 7)
+                "NOP",                //  7    1   Placeholder function
+                "RET",                //  8    1   Return
+                "",
+                "WelcomeMessage:",    //  -    0   Label (position 9)
+                "DB \"FS System v1.0\"" // 9   15   String with null terminator
+            };
+
+            // Act
+            byte[] result = _assembler.AssembleLines(lines);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.Should().HaveCount(24); // 9 instruction bytes + 15 string bytes + null = 24 total
+            
+            // Verify LDDA instruction with correct address resolution
+            result[0].Should().Be(0x18); // LDDA opcode
+            result[1].Should().Be(9);    // WelcomeMessage address low byte 
+            result[2].Should().Be(0);    // WelcomeMessage address high byte
+            
+            // Verify CALL instruction
+            result[3].Should().Be(0x60); // CALL opcode
+            result[4].Should().Be(7);    // PrintString address low byte
+            result[5].Should().Be(0);    // PrintString address high byte
+            
+            // Verify HALT
+            result[6].Should().Be(0x01); // HALT opcode
+            
+            // Verify PrintString function
+            result[7].Should().Be(0x00); // NOP opcode
+            result[8].Should().Be(0x61); // RET opcode
+            
+            // Verify the string data starts at position 9
+            string welcomeMessage = System.Text.Encoding.ASCII.GetString(result, 9, 14);
+            welcomeMessage.Should().Be("FS System v1.0");
+            result[23].Should().Be(0); // null terminator at the end
         }
 
         #endregion

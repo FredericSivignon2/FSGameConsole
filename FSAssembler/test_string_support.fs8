@@ -1,0 +1,24 @@
+; Test file to verify string support in DB directive
+; This should now work with the updated assembler
+
+TestProgram:
+    LDDA WelcomeMessage    
+    CALL PrintString      
+    HALT
+
+PrintString:
+    NOP
+    RET
+
+WelcomeMessage:
+    DB "FS System v1.0"
+
+; Additional test data
+ScreenSize:
+    DB 0x40, 0x01, 0xC8, 0x00 ; Width: 320 pixels, Height: 200 pixels
+
+CharSize:
+    DB 0x08, 0x08 ; Width: 8 pixels, Height: 8 pixels
+
+TestMixed:
+    DB "Hello", 32, "World", 0 ; Mixed string and numeric data

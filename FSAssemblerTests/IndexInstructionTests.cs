@@ -1210,5 +1210,286 @@ namespace FSAssemblerTests
         }
 
         #endregion
+
+        #region Label Support Tests
+
+        [Fact]
+        public void LDIX1_WithLabel_ShouldGenerateCorrectCode()
+        {
+            // Arrange
+            string[] lines = 
+            {                     // pos  size
+                "LDIX1 MESSAGE",  //  0    3   Load IDX1 with MESSAGE address
+                "HALT",           //  3    1   Halt
+                "MESSAGE:",       //  -    0   Label (position 4)
+                "DB 42"           //  4    1   Data
+            };
+
+            // Act
+            byte[] result = _assembler.AssembleLines(lines);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.Should().HaveCount(5);
+            result[0].Should().Be(0x1A); // LDIX1 opcode
+            result[1].Should().Be(0x04); // MESSAGE address low byte (position 4)
+            result[2].Should().Be(0x00); // MESSAGE address high byte
+            result[3].Should().Be(0x01); // HALT opcode
+            result[4].Should().Be(42);   // Data at MESSAGE
+        }
+
+        [Fact]
+        public void LDIX2_WithLabel_ShouldGenerateCorrectCode()
+        {
+            // Arrange
+            string[] lines = 
+            {                     // pos  size
+                "LDIX2 DATA",     //  0    3   Load IDX2 with DATA address
+                "NOP",            //  3    1   
+                "DATA:",          //  -    0   Label (position 4)
+                "DB 0xFF"         //  4    1   Data
+            };
+
+            // Act
+            byte[] result = _assembler.AssembleLines(lines);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.Should().HaveCount(5);
+            result[0].Should().Be(0x1B); // LDIX2 opcode
+            result[1].Should().Be(0x04); // DATA address low byte (position 4)
+            result[2].Should().Be(0x00); // DATA address high byte
+            result[3].Should().Be(0x00); // NOP opcode
+            result[4].Should().Be(0xFF); // Data at DATA
+        }
+
+        [Fact]
+        public void LDIY1_WithLabel_ShouldGenerateCorrectCode()
+        {
+            // Arrange
+            string[] lines = 
+            {                     // pos  size
+                "LDIY1 STRING",   //  0    3   Load IDY1 with STRING address
+                "STRING:",        //  -    0   Label (position 3)
+                "DB \"Hi\""       //  3    3   String "Hi" + null terminator
+            };
+
+            // Act
+            byte[] result = _assembler.AssembleLines(lines);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.Should().HaveCount(6);
+            result[0].Should().Be(0x1C); // LDIY1 opcode
+            result[1].Should().Be(0x03); // STRING address low byte (position 3)
+            result[2].Should().Be(0x00); // STRING address high byte
+            result[3].Should().Be(72);   // 'H'
+            result[4].Should().Be(105);  // 'i'
+            result[5].Should().Be(0);    // null terminator
+        }
+
+        [Fact]
+        public void LDIY2_WithLabel_ShouldGenerateCorrectCode()
+        {
+            // Arrange
+            string[] lines = 
+            {                     // pos  size
+                "JMP MAIN",       //  0    3   Skip data
+                "BUFFER:",        //  -    0   Label (position 3)
+                "DB 0, 0, 0",     //  3    3   Buffer data
+                "MAIN:",          //  -    0   Label (position 6)
+                "LDIY2 BUFFER"    //  6    3   Load IDY2 with BUFFER address
+            };
+
+            // Act
+            byte[] result = _assembler.AssembleLines(lines);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.Should().HaveCount(9);
+            result[0].Should().Be(0x40); // JMP opcode
+            result[1].Should().Be(0x06); // MAIN address low byte (position 6)
+            result[2].Should().Be(0x00); // MAIN address high byte
+            result[3].Should().Be(0);    // Buffer data
+            result[4].Should().Be(0);    // Buffer data
+            result[5].Should().Be(0);    // Buffer data
+            result[6].Should().Be(0x1D); // LDIY2 opcode
+            result[7].Should().Be(0x03); // BUFFER address low byte (position 3)
+            result[8].Should().Be(0x00); // BUFFER address high byte
+        }
+
+        [Fact]
+        public void IndexLoad_ROMStyleProgram_ShouldAssembleCorrectly()
+        {
+            // Arrange - Test inspired by the ROM file
+            string[] lines = 
+            {                            // pos  size
+                "Startup:",              //  -    0   Label
+                "LDIX1 WelcomeMessage",  //  0    3   Load IDX1 with message address (ROM style!)
+                "CALL PrintString",      //  3    3   Call print function
+                "HALT",                  //  6    1   Halt
+                "",
+                "PrintString:",          //  -    0   Label (position 7)
+                "NOP",                   //  7    1   Placeholder
+                "RET",                   //  8    1   Return
+                "",
+                "WelcomeMessage:",       //  -    0   Label (position 9)
+                "DB \"FS System v1.0\""
+            };
+
+            // Act
+            byte[] result = _assembler.AssembleLines(lines);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.Should().HaveCount(24);
+            
+            // Verify LDIX1 with label resolution
+            result[0].Should().Be(0x1A); // LDIX1 opcode
+            result[1].Should().Be(9);    // WelcomeMessage address low byte (position 9)
+            result[2].Should().Be(0);    // WelcomeMessage address high byte
+            
+            // Verify CALL instruction
+            result[3].Should().Be(0x60); // CALL opcode
+            result[4].Should().Be(7);    // PrintString address low byte (position 7)
+            result[5].Should().Be(0);    // PrintString address high byte
+            
+            // Verify HALT
+            result[6].Should().Be(0x01); // HALT opcode
+            
+            // Verify the string data starts at position 9
+            string welcomeMessage = System.Text.Encoding.ASCII.GetString(result, 9, 14);
+            welcomeMessage.Should().Be("FS System v1.0");
+            result[23].Should().Be(0); // null terminator at the end
+        }
+
+        [Fact]
+        public void IndexLoad_BothSyntaxesSupported_ShouldWork()
+        {
+            // Arrange - Test both immediate and label syntax work
+            string[] lines = 
+            {                            // pos  size
+                "LDIX1 #0x8000",         //  0    3   Immediate syntax
+                "LDIX2 DATA_PTR",        //  3    3   Label syntax
+                "LDIY1 #1000",           //  6    3   Immediate decimal
+                "LDIY2 STRING_PTR",      //  9    3   Label syntax
+                "HALT",                  // 12    1   Halt
+                "DATA_PTR:",             //  -    0   Label (position 13)
+                "DB 0xAB",               // 13    1   Data
+                "STRING_PTR:",           //  -    0   Label (position 14)
+                "DB \"OK\""              // 14    3   String + null
+            };
+
+            // Act
+            byte[] result = _assembler.AssembleLines(lines);
+
+            // Assert
+            result.Should().NotBeNull();
+            result.Should().HaveCount(17);
+            
+            // Verify LDIX1 #0x8000
+            result[0].Should().Be(0x1A); // LDIX1 opcode
+            result[1].Should().Be(0x00); // 0x8000 low byte
+            result[2].Should().Be(0x80); // 0x8000 high byte
+            
+            // Verify LDIX2 DATA_PTR
+            result[3].Should().Be(0x1B); // LDIX2 opcode
+            result[4].Should().Be(13);   // DATA_PTR address low byte (position 13)
+            result[5].Should().Be(0);    // DATA_PTR address high byte
+            
+            // Verify LDIY1 #1000
+            result[6].Should().Be(0x1C); // LDIY1 opcode
+            result[7].Should().Be(232);  // 1000 & 0xFF (low byte)
+            result[8].Should().Be(3);    // 1000 >> 8 (high byte)
+            
+            // Verify LDIY2 STRING_PTR
+            result[9].Should().Be(0x1D);  // LDIY2 opcode
+            result[10].Should().Be(14);   // STRING_PTR address low byte (position 14)
+            result[11].Should().Be(0);    // STRING_PTR address high byte
+            
+            // Verify HALT
+            result[12].Should().Be(0x01); // HALT opcode
+            
+            // Verify data
+            result[13].Should().Be(0xAB); // Data at DATA_PTR
+            result[14].Should().Be(79);   // 'O'
+            result[15].Should().Be(75);   // 'K'
+            result[16].Should().Be(0);    // null terminator
+        }
+
+        [Fact]
+        public void ROM_Original_LDIX1_Label_ShouldAssemble()
+        {
+            // Arrange - Simplified version of the original ROM with LDIX1 label syntax
+            string[] lines = 
+            {
+                "Startup:",
+                "    LDIX1 WelcomeMessage",    // This should now work!
+                "    CALL PrintString",
+                "    HALT",
+                "",
+                "PrintString:",
+                "PrintString_Loop:",
+                "    LDA (IDX1)", 
+                "    LDB #0",
+                "    CMP A,B",
+                "    JZ PrintString_End",
+                "    INCIX1",
+                "    JMP PrintString_Loop",
+                "PrintString_End:",
+                "    RET",
+                "",
+                "WelcomeMessage:",
+                "    DB \"FS System v1.0\""
+            };
+
+            // Act - This should NOT throw an exception anymore
+            Action assembleAction = () => _assembler.AssembleLines(lines);
+
+            // Assert
+            assembleAction.Should().NotThrow("LDIX1 should now support label syntax like LDDA");
+            
+            byte[] result = _assembler.AssembleLines(lines);
+            result.Should().NotBeNull();
+            result.Length.Should().BeGreaterThan(0);
+            
+            // Verify that LDIX1 got the correct address for WelcomeMessage
+            result[0].Should().Be(0x1A, "First instruction should be LDIX1 opcode");
+            // The exact address will depend on the program layout, but it should be non-zero
+            // since WelcomeMessage is defined later in the program
+            ushort welcomeMessageAddress = (ushort)(result[1] | (result[2] << 8));
+            welcomeMessageAddress.Should().BeGreaterThan(0, "WelcomeMessage should have a valid address");
+        }
+
+        [Fact]
+        public void LDIX1_WelcomeMessage_ROM_Style_ShouldWork()
+        {
+            // Arrange - Test the exact ROM syntax that was failing
+            string[] lines = 
+            {                            // pos  size
+                "LDIX1 WelcomeMessage",  //  0    3   This is the line that was failing!
+                "HALT",                  //  3    1   
+                "WelcomeMessage:",       //  -    0   Label (position 4)
+                "DB \"FS System v1.0\""
+            };
+
+            // Act & Assert - Should NOT throw an exception
+            Action assembleAction = () => _assembler.AssembleLines(lines);
+            assembleAction.Should().NotThrow("LDIX1 with label should now work like LDDA");
+            
+            byte[] result = _assembler.AssembleLines(lines);
+            
+            // Assert
+            result.Should().NotBeNull();
+            result[0].Should().Be(0x1A, "LDIX1 opcode");
+            result[1].Should().Be(4, "WelcomeMessage address low byte (position 4)");
+            result[2].Should().Be(0, "WelcomeMessage address high byte"); 
+            result[3].Should().Be(0x01, "HALT opcode");
+            
+            // Verify string content
+            string message = System.Text.Encoding.ASCII.GetString(result, 4, 14);
+            message.Should().Be("FS System v1.0");
+        }
     }
+    #endregion
 }

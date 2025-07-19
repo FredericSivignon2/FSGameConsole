@@ -1,0 +1,41 @@
+; Test ROM file with LDIX1 label support
+; This file should now assemble correctly with the updated assembler
+
+Startup:
+    LDIX1 WelcomeMessage    
+    CALL PrintString      
+    HALT
+
+PrintString:
+    ; The string address is received in the 16-bit register IDX1
+    ; IDX1 contains the address of the character string
+    ; Save IDX1 to be able to use it as a pointer
+    PUSH16 IDX1
+
+PrintString_Loop:
+    ; Load the current character from IDX1
+    LDA (IDX1)              ; Load character pointed by IDX1 into A
+    
+    ; Check if it's the end character (0x00)
+    LDB #0                  ; Load 0 into B for comparison  
+    CMP A,B                 ; Compare A with B
+    JZ PrintString_End      ; If zero, terminate
+    
+    ; Move to next character
+    INCIX1                  ; Increment IDX1 address
+    JMP PrintString_Loop    ; Continue loop
+    
+PrintString_End:
+    ; Restore IDX1
+    POP16 IDX1
+    RET                     ; Return from function
+
+WelcomeMessage:
+    DB "FS System v1.0"
+
+; Test data section
+ScreenSize:
+    DB 0x40, 0x01, 0xC8, 0x00 ; Width: 320 pixels, Height: 200 pixels
+
+CharSize:
+    DB 0x08, 0x08 ; Width: 8 pixels, Height: 8 pixels
