@@ -83,33 +83,19 @@ public class CPU8Bit
     }
 
     // Registres d'index (16 bits chacun) - utilisation de champs au lieu de propriétés pour permettre ref
-    private ushort _regIDX1;
-    private ushort _regIDX2;
-    private ushort _regIDY1;
-    private ushort _regIDY2;
+    private ushort _regIDX;
+    private ushort _regIDY;
 
-    public ushort IDX1
+    public ushort IDX
     {
-        get => _regIDX1;
-        set => _regIDX1 = value;
+        get => _regIDX;
+        set => _regIDX = value;
     }
 
-    public ushort IDX2
+    public ushort IDY
     {
-        get => _regIDX2;
-        set => _regIDX2 = value;
-    }
-
-    public ushort IDY1
-    {
-        get => _regIDY1;
-        set => _regIDY1 = value;
-    }
-
-    public ushort IDY2
-    {
-        get => _regIDY2;
-        set => _regIDY2 = value;
+        get => _regIDY;
+        set => _regIDY = value;
     }
 
     // Registres spéciaux (16 bits)
@@ -156,7 +142,7 @@ public class CPU8Bit
     {
         _regA = _regB = _regC = _regD = _regE = _regF = 0;
         _regDA = _regDB = 0;
-        _regIDX1 = _regIDX2 = _regIDY1 = _regIDY2 = 0; // Reset index registers
+        _regIDX = _regIDY = 0; // Reset index registers
 
         // Démarrer sur la ROM au lieu de 0x0000
         PC = RomManager.ROM_BOOT_START; // 0xF400 - Début de la ROM BOOT
@@ -338,28 +324,16 @@ public class CPU8Bit
                 SR.UpdateZeroFlag(_regDB);
                 break;
 
-            case 0x1A: // LDIX1 #imm16 - Load IDX1 with 16-bit immediate value
-                _regIDX1 = Memory.ReadWord(PC);
+            case 0x1A: // LDIDX #imm16 - Load IDX with 16-bit immediate value
+                _regIDX = Memory.ReadWord(PC);
                 PC = (ushort)(PC + 2);
-                SR.UpdateZeroFlag(_regIDX1);
+                SR.UpdateZeroFlag(_regIDX);
                 break;
 
-            case 0x1B: // LDIX2 #imm16 - Load IDX2 with 16-bit immediate value
-                _regIDX2 = Memory.ReadWord(PC);
+            case 0x1C: // LDIDY #imm16 - Load IDY with 16-bit immediate value
+                _regIDY = Memory.ReadWord(PC);
                 PC = (ushort)(PC + 2);
-                SR.UpdateZeroFlag(_regIDX2);
-                break;
-
-            case 0x1C: // LDIY1 #imm16 - Load IDY1 with 16-bit immediate value
-                _regIDY1 = Memory.ReadWord(PC);
-                PC = (ushort)(PC + 2);
-                SR.UpdateZeroFlag(_regIDY1);
-                break;
-
-            case 0x1D: // LDIY2 #imm16 - Load IDY2 with 16-bit immediate value
-                _regIDY2 = Memory.ReadWord(PC);
-                PC = (ushort)(PC + 2);
-                SR.UpdateZeroFlag(_regIDY2);
+                SR.UpdateZeroFlag(_regIDY);
                 break;
 
             // === 8-BIT ARITHMETIC INSTRUCTIONS ===
@@ -738,197 +712,120 @@ public class CPU8Bit
                 break;
 
             // === AUTO-INCREMENT/DECREMENT FOR ARRAYS (0xC4-0xCB) ===
-            case 0xC4: // LDAIX1+ - Load A from (IDX1), then increment IDX1
-                _regA = Memory.ReadByte(_regIDX1);
-                _regIDX1++;
+            case 0xC4: // LDAIDX+ - Load A from (IDX), then increment IDX
+                _regA = Memory.ReadByte(_regIDX);
+                _regIDX++;
                 SR.UpdateZeroFlag(_regA);
                 break;
 
-            case 0xC5: // LDAIY1+ - Load A from (IDY1), then increment IDY1
-                _regA = Memory.ReadByte(_regIDY1);
-                _regIDY1++;
+            case 0xC5: // LDAIDY+ - Load A from (IDY), then increment IDY
+                _regA = Memory.ReadByte(_regIDY);
+                _regIDY++;
                 SR.UpdateZeroFlag(_regA);
                 break;
 
-            case 0xC6: // STAIX1+ - Store A at (IDX1), then increment IDX1
-                Memory.WriteByte(_regIDX1, _regA);
-                _regIDX1++;
+            case 0xC6: // STAIDX+ - Store A at (IDX), then increment IDX
+                Memory.WriteByte(_regIDX, _regA);
+                _regIDX++;
                 break;
 
-            case 0xC7: // STAIY1+ - Store A at (IDY1), then increment IDY1
-                Memory.WriteByte(_regIDY1, _regA);
-                _regIDY1++;
+            case 0xC7: // STAIDY+ - Store A at (IDY), then increment IDY
+                Memory.WriteByte(_regIDY, _regA);
+                _regIDY++;
                 break;
 
-            case 0xC8: // LDAIX1- - Load A from (IDX1), then decrement IDX1
-                _regA = Memory.ReadByte(_regIDX1);
-                _regIDX1--;
+            case 0xC8: // LDAIDX- - Load A from (IDX), then decrement IDX
+                _regA = Memory.ReadByte(_regIDX);
+                _regIDX--;
                 SR.UpdateZeroFlag(_regA);
                 break;
 
-            case 0xC9: // LDAIY1- - Load A from (IDY1), then decrement IDY1
-                _regA = Memory.ReadByte(_regIDY1);
-                _regIDY1--;
+            case 0xC9: // LDAIDY- - Load A from (IDY), then decrement IDY
+                _regA = Memory.ReadByte(_regIDY);
+                _regIDY--;
                 SR.UpdateZeroFlag(_regA);
                 break;
 
-            case 0xCA: // STAIX1- - Store A at (IDX1), then decrement IDX1
-                Memory.WriteByte(_regIDX1, _regA);
-                _regIDX1--;
+            case 0xCA: // STAIDX- - Store A at (IDX), then decrement IDX
+                Memory.WriteByte(_regIDX, _regA);
+                _regIDX--;
                 break;
 
-            case 0xCB: // STAIY1- - Store A at (IDY1), then decrement IDY1
-                Memory.WriteByte(_regIDY1, _regA);
-                _regIDY1--;
+            case 0xCB: // STAIDY- - Store A at (IDY), then decrement IDY
+                Memory.WriteByte(_regIDY, _regA);
+                _regIDY--;
                 break;
 
             // === INDEX REGISTER INCREMENT/DECREMENT INSTRUCTIONS (0xE0-0xE7) ===
-            case 0xE0: // INCIX1 - Increment IDX1
-                _regIDX1++;
-                SR.UpdateZeroFlag(_regIDX1);
+            case 0xE0: // INCIDX - Increment IDX
+                _regIDX++;
+                SR.UpdateZeroFlag(_regIDX);
                 break;
 
-            case 0xE1: // DECIX1 - Decrement IDX1
-                _regIDX1--;
-                SR.UpdateZeroFlag(_regIDX1);
+            case 0xE1: // DECIDX - Decrement IDX
+                _regIDX--;
+                SR.UpdateZeroFlag(_regIDX);
                 break;
 
-            case 0xE2: // INCIY1 - Increment IDY1
-                _regIDY1++;
-                SR.UpdateZeroFlag(_regIDY1);
+            case 0xE2: // INCIDY - Increment IDY
+                _regIDY++;
+                SR.UpdateZeroFlag(_regIDY);
                 break;
 
-            case 0xE3: // DECIY1 - Decrement IDY1
-                _regIDY1--;
-                SR.UpdateZeroFlag(_regIDY1);
-                break;
-
-            case 0xE4: // INCIX2 - Increment IDX2
-                _regIDX2++;
-                SR.UpdateZeroFlag(_regIDX2);
-                break;
-
-            case 0xE5: // DECIX2 - Decrement IDX2
-                _regIDX2--;
-                SR.UpdateZeroFlag(_regIDX2);
-                break;
-
-            case 0xE6: // INCIY2 - Increment IDY2
-                _regIDY2++;
-                SR.UpdateZeroFlag(_regIDY2);
-                break;
-
-            case 0xE7: // DECIY2 - Decrement IDY2
-                _regIDY2--;
-                SR.UpdateZeroFlag(_regIDY2);
+            case 0xE3: // DECIDY - Decrement IDY
+                _regIDY--;
+                SR.UpdateZeroFlag(_regIDY);
                 break;
 
             // === INDEX REGISTER ADD IMMEDIATE INSTRUCTIONS (0xE8-0xEB) ===
-            case 0xE8: // ADDIX1 #imm16 - Add 16-bit immediate to IDX1
+            case 0xE8: // ADDIDX #imm16 - Add 16-bit immediate to IDX
                 {
                     ushort immediate = Memory.ReadWord(PC);
                     PC = (ushort)(PC + 2);
-                    uint result = (uint)_regIDX1 + immediate;
+                    uint result = (uint)_regIDX + immediate;
                     SR.SetCarryFlag(result > 0xFFFF); // Set carry if overflow
-                    _regIDX1 = (ushort)result;
-                    SR.UpdateZeroFlag(_regIDX1);
+                    _regIDX = (ushort)result;
+                    SR.UpdateZeroFlag(_regIDX);
                 }
                 break;
 
-            case 0xE9: // ADDIX2 #imm16 - Add 16-bit immediate to IDX2
+            case 0xEA: // ADDIDY #imm16 - Add 16-bit immediate to IDY
                 {
                     ushort immediate = Memory.ReadWord(PC);
                     PC = (ushort)(PC + 2);
-                    uint result = (uint)_regIDX2 + immediate;
+                    uint result = (uint)_regIDY + immediate;
                     SR.SetCarryFlag(result > 0xFFFF); // Set carry if overflow
-                    _regIDX2 = (ushort)result;
-                    SR.UpdateZeroFlag(_regIDX2);
+                    _regIDY = (ushort)result;
+                    SR.UpdateZeroFlag(_regIDY);
                 }
-                break;
-
-            case 0xEA: // ADDIY1 #imm16 - Add 16-bit immediate to IDY1
-                {
-                    ushort immediate = Memory.ReadWord(PC);
-                    PC = (ushort)(PC + 2);
-                    uint result = (uint)_regIDY1 + immediate;
-                    SR.SetCarryFlag(result > 0xFFFF); // Set carry if overflow
-                    _regIDY1 = (ushort)result;
-                    SR.UpdateZeroFlag(_regIDY1);
-                }
-                break;
-
-            case 0xEB: // ADDIY2 #imm16 - Add 16-bit immediate to IDY2
-                {
-                    ushort immediate = Memory.ReadWord(PC);
-                    PC = (ushort)(PC + 2);
-                    uint result = (uint)_regIDY2 + immediate;
-                    SR.SetCarryFlag(result > 0xFFFF); // Set carry if overflow
-                    _regIDY2 = (ushort)result;
-                    SR.UpdateZeroFlag(_regIDY2);
-                }
-                break;
-
-            // === SYSTEM CALL ===
-            case 0xF0: // SYS - System call
-                ExecuteSystemCall();
                 break;
 
             // === INDEX REGISTER TRANSFER INSTRUCTIONS (0xF1-0xF9) ===
-            case 0xF1: // MVIX1IX2 - Move IDX1 to IDX2
-                _regIDX2 = _regIDX1;
-                SR.UpdateZeroFlag(_regIDX2);
+            case 0xF5: // MVIDXIDY - Move IDX to IDY
+                _regIDY = _regIDX;
+                SR.UpdateZeroFlag(_regIDY);
                 break;
 
-            case 0xF2: // MVIX2IX1 - Move IDX2 to IDX1
-                _regIDX1 = _regIDX2;
-                SR.UpdateZeroFlag(_regIDX1);
+            case 0xF6: // MVIDYIDX - Move IDY to IDX
+                _regIDX = _regIDY;
+                SR.UpdateZeroFlag(_regIDX);
                 break;
 
-            case 0xF3: // MVIY1IY2 - Move IDY1 to IDY2
-                _regIDY2 = _regIDY1;
-                SR.UpdateZeroFlag(_regIDY2);
-                break;
-
-            case 0xF4: // MVIY2IY1 - Move IDY2 to IDY1
-                _regIDY1 = _regIDY2;
-                SR.UpdateZeroFlag(_regIDY1);
-                break;
-
-            case 0xF5: // MVIX1IY1 - Move IDX1 to IDY1
-                _regIDY1 = _regIDX1;
-                SR.UpdateZeroFlag(_regIDY1);
-                break;
-
-            case 0xF6: // MVIY1IX1 - Move IDY1 to IDX1
-                _regIDX1 = _regIDY1;
-                SR.UpdateZeroFlag(_regIDX1);
-                break;
-
-            case 0xF7: // SWPIX1IX2 - Swap IDX1 and IDX2
+            case 0xF9: // SWPIDXIDY - Swap IDX and IDY
                 {
-                    ushort tempIdx = _regIDX1;
-                    _regIDX1 = _regIDX2;
-                    _regIDX2 = tempIdx;
-                    SR.UpdateZeroFlag(_regIDX1); // Update flags based on new IDX1 value
+                    ushort tempXY = _regIDX;
+                    _regIDX = _regIDY;
+                    _regIDY = tempXY;
+                    SR.UpdateZeroFlag(_regIDX); // Update flags based on new IDX value
                 }
                 break;
 
-            case 0xF8: // SWPIY1IY2 - Swap IDY1 and IDY2
-                {
-                    ushort tempIdy = _regIDY1;
-                    _regIDY1 = _regIDY2;
-                    _regIDY2 = tempIdy;
-                    SR.UpdateZeroFlag(_regIDY1); // Update flags based on new IDY1 value
-                }
+            case 0xFE: // Extended instruction set 1
+                // Extended instruction opcode can be read from the next byte
                 break;
 
-            case 0xF9: // SWPIX1IY1 - Swap IDX1 and IDY1
-                {
-                    ushort tempXY = _regIDX1;
-                    _regIDX1 = _regIDY1;
-                    _regIDY1 = tempXY;
-                    SR.UpdateZeroFlag(_regIDX1); // Update flags based on new IDX1 value
-                }
+            case 0xFF: // Extended instruction set 2
+                // Extended instruction opcode can be read from the next byte
                 break;
 
             default:
@@ -936,29 +833,6 @@ public class CPU8Bit
         }
     }
 
-    /// <summary>
-    /// Exécute un appel système (nouvelle instruction SYS 0xF0)
-    /// </summary>
-    private void ExecuteSystemCall()
-    {
-        if (SystemCalls != null)
-        {
-            bool handled = SystemCalls.ExecuteSystemCall(this);
-
-            if (!handled)
-            {
-                // Appel système non reconnu - on peut soit ignorer, soit lever une erreur
-                // Pour l'instant, on ignore silencieusement
-            }
-        }
-        else
-        {
-            // Pas de gestionnaire d'appels système configuré
-            // On ignore l'instruction
-        }
-    }
-
-    /// <summary>
     /// Obtient la valeur d'un registre par son nom
     /// </summary>
     public byte GetRegister(char register)
@@ -1002,10 +876,8 @@ public class CPU8Bit
         {
             "DA" => _regDA,
             "DB" => _regDB,
-            "IDX1" => _regIDX1,
-            "IDX2" => _regIDX2,
-            "IDY1" => _regIDY1,
-            "IDY2" => _regIDY2,
+            "IDX" => _regIDX,
+            "IDY" => _regIDY,
             "PC" => PC,
             "SP" => SP,
             _ => throw new ArgumentException($"Invalid 16-bit register: {register}")
@@ -1021,10 +893,8 @@ public class CPU8Bit
         {
             case "DA": _regDA = value; break;
             case "DB": _regDB = value; break;
-            case "IDX1": _regIDX1 = value; break;
-            case "IDX2": _regIDX2 = value; break;
-            case "IDY1": _regIDY1 = value; break;
-            case "IDY2": _regIDY2 = value; break;
+            case "IDX": _regIDX = value; break;
+            case "IDY": _regIDY = value; break;
             case "PC": PC = value; break;
             case "SP": SP = value; break;
             default: throw new ArgumentException($"Invalid 16-bit register: {register}");
@@ -1057,7 +927,7 @@ public class CPU8Bit
                $"  SP = 0x{SP:X4}\n" +
                $"  8-bit: A={A:X2} B={B:X2} C={C:X2} D={D:X2} E={E:X2} F={F:X2}\n" +
                $"  16-bit: DA=0x{DA:X4} DB=0x{DB:X4}\n" +
-               $"  Index: IDX1=0x{IDX1:X4} IDX2=0x{IDX2:X4} IDY1=0x{IDY1:X4} IDY2=0x{IDY2:X4}\n" +
+               $"  Index: IDX=0x{IDX:X4} IDY=0x{IDY:X4} \n" +
                $"  SR = {SR}\n" +
                $"  Running = {IsRunning}\n" +
                $"  Instructions: {TotalInstructionsExecuted:N0}\n" +

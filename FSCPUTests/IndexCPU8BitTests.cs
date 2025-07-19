@@ -34,26 +34,7 @@ namespace FSCPUTests
             _cpu.ExecuteCycle();
 
             // Assert
-            _cpu.IDX1.Should().Be(0x1234);
-            _cpu.PC.Should().Be(3);
-            _cpu.SR.Zero.Should().BeFalse();
-        }
-
-        [Fact]
-        public void LDIX2_ImmediateValue_ShouldLoadCorrectly()
-        {
-            // Arrange - Place program in RAM
-            _memory.WriteByte(0x0000, 0x1B); // LDIX2 #imm16
-            _memory.WriteByte(0x0001, 0x00); // Low byte
-            _memory.WriteByte(0x0002, 0x80); // High byte
-            _cpu.PC = 0x0000;
-            _cpu.Start(false);
-
-            // Act
-            _cpu.ExecuteCycle();
-
-            // Assert
-            _cpu.IDX2.Should().Be(0x8000);
+            _cpu.IDX.Should().Be(0x1234);
             _cpu.PC.Should().Be(3);
             _cpu.SR.Zero.Should().BeFalse();
         }
@@ -72,28 +53,9 @@ namespace FSCPUTests
             _cpu.ExecuteCycle();
 
             // Assert
-            _cpu.IDY1.Should().Be(0xFFFF);
+            _cpu.IDY.Should().Be(0xFFFF);
             _cpu.PC.Should().Be(3);
             _cpu.SR.Zero.Should().BeFalse();
-        }
-
-        [Fact]
-        public void LDIY2_ImmediateValue_ShouldLoadCorrectly()
-        {
-            // Arrange - Place program in RAM
-            _memory.WriteByte(0x0000, 0x1D); // LDIY2 #imm16
-            _memory.WriteByte(0x0001, 0x00); // Low byte
-            _memory.WriteByte(0x0002, 0x00); // High byte
-            _cpu.PC = 0x0000;
-            _cpu.Start(false);
-
-            // Act
-            _cpu.ExecuteCycle();
-
-            // Assert
-            _cpu.IDY2.Should().Be(0x0000);
-            _cpu.PC.Should().Be(3);
-            _cpu.SR.Zero.Should().BeTrue(); // Zero flag should be set for zero value
         }
 
         #endregion
@@ -104,7 +66,7 @@ namespace FSCPUTests
         public void LDAIX1_PostIncrement_ShouldLoadAndIncrement()
         {
             // Arrange - Setup index register and memory
-            _cpu.IDX1 = 0x2000;
+            _cpu.IDX = 0x2000;
             _memory.WriteByte(0x2000, 0x42); // Value at current IDX1
             
             // Place instruction in RAM
@@ -117,7 +79,7 @@ namespace FSCPUTests
 
             // Assert
             _cpu.A.Should().Be(0x42);        // Value loaded
-            _cpu.IDX1.Should().Be(0x2001);   // IDX1 incremented
+            _cpu.IDX.Should().Be(0x2001);   // IDX1 incremented
             _cpu.PC.Should().Be(1);
             _cpu.SR.Zero.Should().BeFalse();
         }
@@ -127,7 +89,7 @@ namespace FSCPUTests
         {
             // Arrange - Setup registers
             _cpu.A = 0x33;
-            _cpu.IDY1 = 0x3000;
+            _cpu.IDY = 0x3000;
             
             // Place instruction in RAM
             _memory.WriteByte(0x0000, 0xC7); // STAIY1+
@@ -139,7 +101,7 @@ namespace FSCPUTests
 
             // Assert
             _memory.ReadByte(0x3000).Should().Be(0x33); // Value stored at original address
-            _cpu.IDY1.Should().Be(0x3001);              // IDY1 incremented
+            _cpu.IDY.Should().Be(0x3001);              // IDY1 incremented
             _cpu.PC.Should().Be(1);
         }
 
@@ -147,7 +109,7 @@ namespace FSCPUTests
         public void LDAIX1_PostDecrement_ShouldLoadAndDecrement()
         {
             // Arrange - Setup index register and memory
-            _cpu.IDX1 = 0x2005;
+            _cpu.IDX = 0x2005;
             _memory.WriteByte(0x2005, 0x66); // Value at current IDX1
             
             // Place instruction in RAM
@@ -160,7 +122,7 @@ namespace FSCPUTests
 
             // Assert
             _cpu.A.Should().Be(0x66);        // Value loaded
-            _cpu.IDX1.Should().Be(0x2004);   // IDX1 decremented
+            _cpu.IDX.Should().Be(0x2004);   // IDX1 decremented
             _cpu.PC.Should().Be(1);
             _cpu.SR.Zero.Should().BeFalse();
         }
@@ -170,7 +132,7 @@ namespace FSCPUTests
         {
             // Arrange - Setup registers
             _cpu.A = 0x44;
-            _cpu.IDY1 = 0x4010;
+            _cpu.IDY = 0x4010;
             
             // Place instruction in RAM
             _memory.WriteByte(0x0000, 0xCB); // STAIY1-
@@ -182,7 +144,7 @@ namespace FSCPUTests
 
             // Assert
             _memory.ReadByte(0x4010).Should().Be(0x44); // Value stored at original address
-            _cpu.IDY1.Should().Be(0x400F);              // IDY1 decremented
+            _cpu.IDY.Should().Be(0x400F);              // IDY1 decremented
             _cpu.PC.Should().Be(1);
         }
 
@@ -194,7 +156,7 @@ namespace FSCPUTests
         public void INCIX1_ShouldIncrementIDX1()
         {
             // Arrange - Setup index register
-            _cpu.IDX1 = 0x1234;
+            _cpu.IDX = 0x1234;
             
             // Place instruction in RAM
             _memory.WriteByte(0x0000, 0xE0); // INCIX1
@@ -205,7 +167,7 @@ namespace FSCPUTests
             _cpu.ExecuteCycle();
 
             // Assert
-            _cpu.IDX1.Should().Be(0x1235);
+            _cpu.IDX.Should().Be(0x1235);
             _cpu.PC.Should().Be(1);
             _cpu.SR.Zero.Should().BeFalse();
         }
@@ -214,7 +176,7 @@ namespace FSCPUTests
         public void DECIY1_ShouldDecrementIDY1()
         {
             // Arrange - Setup index register
-            _cpu.IDY1 = 0x5000;
+            _cpu.IDY = 0x5000;
             
             // Place instruction in RAM
             _memory.WriteByte(0x0000, 0xE3); // DECIY1
@@ -225,7 +187,7 @@ namespace FSCPUTests
             _cpu.ExecuteCycle();
 
             // Assert
-            _cpu.IDY1.Should().Be(0x4FFF);
+            _cpu.IDY.Should().Be(0x4FFF);
             _cpu.PC.Should().Be(1);
             _cpu.SR.Zero.Should().BeFalse();
         }
@@ -234,7 +196,7 @@ namespace FSCPUTests
         public void ADDIX1_ImmediateValue_ShouldAddToIDX1()
         {
             // Arrange - Setup index register
-            _cpu.IDX1 = 0x1000;
+            _cpu.IDX = 0x1000;
             
             // Place instruction in RAM
             _memory.WriteByte(0x0000, 0xE8); // ADDIX1 #imm16
@@ -247,31 +209,9 @@ namespace FSCPUTests
             _cpu.ExecuteCycle();
 
             // Assert
-            _cpu.IDX1.Should().Be(0x1500); // 0x1000 + 0x0500
+            _cpu.IDX.Should().Be(0x1500); // 0x1000 + 0x0500
             _cpu.PC.Should().Be(3);
             _cpu.SR.Zero.Should().BeFalse();
-        }
-
-        [Fact]
-        public void ADDIY2_ImmediateValue_ShouldAddToIDY2()
-        {
-            // Arrange - Setup index register
-            _cpu.IDY2 = 0x8000;
-            
-            // Place instruction in RAM
-            _memory.WriteByte(0x0000, 0xEB); // ADDIY2 #imm16
-            _memory.WriteByte(0x0001, 0xFF); // Low byte of 0x7FFF
-            _memory.WriteByte(0x0002, 0x7F); // High byte
-            _cpu.PC = 0x0000;
-            _cpu.Start(false);
-
-            // Act
-            _cpu.ExecuteCycle();
-
-            // Assert
-            _cpu.IDY2.Should().Be(0xFFFF); // 0x8000 + 0x7FFF (with overflow)
-            _cpu.PC.Should().Be(3);
-            _cpu.SR.Carry.Should().BeFalse(); // No carry for 16-bit add within range
         }
 
         #endregion
@@ -282,8 +222,7 @@ namespace FSCPUTests
         public void MVIX1IX2_ShouldMoveIDX1ToIDX2()
         {
             // Arrange - Setup source register
-            _cpu.IDX1 = 0xABCD;
-            _cpu.IDX2 = 0x1234; // Different initial value
+            _cpu.IDX = 0xABCD;
             
             // Place instruction in RAM
             _memory.WriteByte(0x0000, 0xF1); // MVIX1IX2
@@ -294,8 +233,7 @@ namespace FSCPUTests
             _cpu.ExecuteCycle();
 
             // Assert
-            _cpu.IDX2.Should().Be(0xABCD); // IDX2 should now equal IDX1
-            _cpu.IDX1.Should().Be(0xABCD); // IDX1 should remain unchanged
+            _cpu.IDX.Should().Be(0xABCD); // IDX1 should remain unchanged
             _cpu.PC.Should().Be(1);
             _cpu.SR.Zero.Should().BeFalse();
         }
@@ -304,8 +242,7 @@ namespace FSCPUTests
         public void SWPIX1IX2_ShouldSwapIDX1AndIDX2()
         {
             // Arrange - Setup both registers with different values
-            _cpu.IDX1 = 0x1111;
-            _cpu.IDX2 = 0x2222;
+            _cpu.IDX = 0x1111;
             
             // Place instruction in RAM
             _memory.WriteByte(0x0000, 0xF7); // SWPIX1IX2
@@ -316,8 +253,7 @@ namespace FSCPUTests
             _cpu.ExecuteCycle();
 
             // Assert
-            _cpu.IDX1.Should().Be(0x2222); // IDX1 should now have original IDX2 value
-            _cpu.IDX2.Should().Be(0x1111); // IDX2 should now have original IDX1 value
+            _cpu.IDX.Should().Be(0x2222); // IDX1 should now have original IDX2 value
             _cpu.PC.Should().Be(1);
             _cpu.SR.Zero.Should().BeFalse();
         }
@@ -326,8 +262,8 @@ namespace FSCPUTests
         public void SWPIX1IY1_ShouldSwapIDX1AndIDY1()
         {
             // Arrange - Setup both registers with different values
-            _cpu.IDX1 = 0xAAAA;
-            _cpu.IDY1 = 0xBBBB;
+            _cpu.IDX = 0xAAAA;
+            _cpu.IDY = 0xBBBB;
             
             // Place instruction in RAM
             _memory.WriteByte(0x0000, 0xF9); // SWPIX1IY1
@@ -338,8 +274,8 @@ namespace FSCPUTests
             _cpu.ExecuteCycle();
 
             // Assert
-            _cpu.IDX1.Should().Be(0xBBBB); // IDX1 should now have original IDY1 value
-            _cpu.IDY1.Should().Be(0xAAAA); // IDY1 should now have original IDX1 value
+            _cpu.IDX.Should().Be(0xBBBB); // IDX1 should now have original IDY1 value
+            _cpu.IDY.Should().Be(0xAAAA); // IDY1 should now have original IDX1 value
             _cpu.PC.Should().Be(1);
             _cpu.SR.Zero.Should().BeFalse();
         }
@@ -394,7 +330,7 @@ namespace FSCPUTests
                 throw new InvalidOperationException(
                     $"Program execution took too many cycles. " +
                     $"PC: 0x{_cpu.PC:X4}, A: {_cpu.A}, " +
-                    $"IDX1: 0x{_cpu.IDX1:X4}, IDY1: 0x{_cpu.IDY1:X4}, " +
+                    $"IDX1: 0x{_cpu.IDX:X4}, IDY1: 0x{_cpu.IDY:X4}, " +
                     $"Zero flag: {_cpu.SR.Zero}");
             }
 
@@ -406,8 +342,8 @@ namespace FSCPUTests
             _memory.ReadByte(0x0034).Should().Be(0x55); // DEST[4]
 
             // Check that index registers were updated correctly
-            _cpu.IDX1.Should().Be(0x0014); // Source pointer after copying 5 bytes (0x19 + 5)
-            _cpu.IDY1.Should().Be(0x0035); // Dest pointer after copying 5 bytes (0x30 + 5)
+            _cpu.IDX.Should().Be(0x0014); // Source pointer after copying 5 bytes (0x19 + 5)
+            _cpu.IDY.Should().Be(0x0035); // Dest pointer after copying 5 bytes (0x30 + 5)
             _cpu.C.Should().Be(0);         // Counter should be zero
         }
 
@@ -418,14 +354,10 @@ namespace FSCPUTests
             byte[] program = 
             {                                 // pos  size
                 0x1A, 0x00, 0x10,             //  0    3   LDIX1 #0x1000
-                0x1B, 0x00, 0x20,             //  3    3   LDIX2 #0x2000  
                 0x1C, 0x00, 0x30,             //  6    3   LDIY1 #0x3000
-                0x1D, 0x00, 0x40,             //  9    3   LDIY2 #0x4000
                 // Test increment operations
                 0xE0,                         // 12    1   INCIX1
-                0xE4,                         // 13    1   INCIX2
                 0xE2,                         // 14    1   INCIY1
-                0xE6,                         // 15    1   INCIY2
                 0x01                          // 16    1   HALT
             };
 
@@ -445,10 +377,8 @@ namespace FSCPUTests
             }
 
             // Assert - Check that all index registers were loaded and incremented correctly
-            _cpu.IDX1.Should().Be(0x1001); // 0x1000 + 1
-            _cpu.IDX2.Should().Be(0x2001); // 0x2000 + 1
-            _cpu.IDY1.Should().Be(0x3001); // 0x3000 + 1
-            _cpu.IDY2.Should().Be(0x4001); // 0x4000 + 1
+            _cpu.IDX.Should().Be(0x1001); // 0x1000 + 1
+            _cpu.IDY.Should().Be(0x3001); // 0x3000 + 1
         }
 
         #endregion
@@ -469,7 +399,7 @@ namespace FSCPUTests
             _cpu.ExecuteCycle();
 
             // Assert
-            _cpu.IDX1.Should().Be(0x0000);
+            _cpu.IDX.Should().Be(0x0000);
             _cpu.SR.Zero.Should().BeTrue();
         }
 
@@ -477,7 +407,7 @@ namespace FSCPUTests
         public void IndexRegister_IncrementOverflow_ShouldWrapAround()
         {
             // Arrange - Set IDX1 to maximum value
-            _cpu.IDX1 = 0xFFFF;
+            _cpu.IDX = 0xFFFF;
             
             // Place instruction in RAM
             _memory.WriteByte(0x0000, 0xE0); // INCIX1
@@ -488,7 +418,7 @@ namespace FSCPUTests
             _cpu.ExecuteCycle();
 
             // Assert
-            _cpu.IDX1.Should().Be(0x0000); // Should wrap around
+            _cpu.IDX.Should().Be(0x0000); // Should wrap around
             _cpu.SR.Zero.Should().BeTrue(); // Zero flag should be set
         }
 
@@ -496,7 +426,7 @@ namespace FSCPUTests
         public void IndexRegister_DecrementUnderflow_ShouldWrapAround()
         {
             // Arrange - Set IDY1 to minimum value
-            _cpu.IDY1 = 0x0000;
+            _cpu.IDY = 0x0000;
             
             // Place instruction in RAM
             _memory.WriteByte(0x0000, 0xE3); // DECIY1
@@ -507,7 +437,7 @@ namespace FSCPUTests
             _cpu.ExecuteCycle();
 
             // Assert
-            _cpu.IDY1.Should().Be(0xFFFF); // Should wrap around to maximum
+            _cpu.IDY.Should().Be(0xFFFF); // Should wrap around to maximum
             _cpu.SR.Zero.Should().BeFalse();
         }
 
@@ -533,7 +463,7 @@ namespace FSCPUTests
             _cpu.ExecuteCycle(); // HALT
 
             // Assert
-            _cpu.IDX1.Should().Be(0x1001); // Should be incremented
+            _cpu.IDX.Should().Be(0x1001); // Should be incremented
             _cpu.A.Should().Be(0x42);      // Should contain the loaded value
             _cpu.IsRunning.Should().BeFalse(); // Should be halted
         }

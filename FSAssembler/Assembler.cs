@@ -37,8 +37,7 @@ public class Assembler
         { "LDDA", 0x16 }, { "LDDB", 0x17 },
         
         // Index register load instructions (16-bit immediate)
-        { "LDIX1", 0x1A }, { "LDIX2", 0x1B },
-        { "LDIY1", 0x1C }, { "LDIY2", 0x1D },
+        { "LDIDX", 0x1A }, { "LDIDY", 0x1C }, 
         
         // Arithmetic instructions
         { "ADD", 0x20 }, { "SUB", 0x21 }, { "ADD16", 0x22 }, { "SUB16", 0x23 },
@@ -71,25 +70,23 @@ public class Assembler
         { "JR", 0xC0 }, { "JRZ", 0xC1 }, { "JRNZ", 0xC2 }, { "JRC", 0xC3 },
         
         // Auto-increment/decrement indexed operations
-        { "LDAIX1+", 0xC4 }, { "LDAIY1+", 0xC5 }, { "STAIX1+", 0xC6 }, { "STAIY1+", 0xC7 },
-        { "LDAIX1-", 0xC8 }, { "LDAIY1-", 0xC9 }, { "STAIX1-", 0xCA }, { "STAIY1-", 0xCB },
+        { "LDAIX1+", 0xC4 }, { "LDAIDY+", 0xC5 }, { "STAIDX+", 0xC6 }, { "STAIDY+", 0xC7 },
+        { "LDAIX1-", 0xC8 }, { "LDAIDY-", 0xC9 }, { "STAIDX-", 0xCA }, { "STAIDY-", 0xCB },
         
         // Index register increment/decrement
-        { "INCIX1", 0xE0 }, { "DECIX1", 0xE1 }, { "INCIY1", 0xE2 }, { "DECIY1", 0xE3 },
-        { "INCIX2", 0xE4 }, { "DECIX2", 0xE5 }, { "INCIY2", 0xE6 }, { "DECIY2", 0xE7 },
+        { "INCIDX", 0xE0 }, { "DECIDX", 0xE1 }, { "INCIDY", 0xE2 }, { "DECIDY", 0xE3 },
         
         // Index register add immediate
-        { "ADDIX1", 0xE8 }, { "ADDIX2", 0xE9 }, { "ADDIY1", 0xEA }, { "ADDIY2", 0xEB },
+        { "ADDIX1", 0xE8 }, { "ADDIDY", 0xEA },
         
         // System call
         { "SYS", 0xF0 },
         
         // Index register transfer instructions
-        { "MVIX1IX2", 0xF1 }, { "MVIX2IX1", 0xF2 }, { "MVIY1IY2", 0xF3 }, { "MVIY2IY1", 0xF4 },
-        { "MVIX1IY1", 0xF5 }, { "MVIY1IX1", 0xF6 },
+        { "MVIDXIDY", 0xF5 }, { "MVIDYIDX", 0xF6 },
         
         // Index register swap instructions
-        { "SWPIX1IX2", 0xF7 }, { "SWPIY1IY2", 0xF8 }, { "SWPIX1IY1", 0xF9 }
+        { "SWPIDXIDY", 0xF9 }
     };
     }
 
@@ -220,25 +217,23 @@ public class Assembler
             "LDDA" or "LDDB" => 3,
 
             // Index register load instructions (16-bit immediate) - always 3 bytes
-            "LDIX1" or "LDIX2" or "LDIY1" or "LDIY2" => 3,
+            "LDIDX" or "LDIDY" => 3,
 
             // Increment/Decrement operations
             "INC" or "DEC" or "INC16" or "DEC16" or "CMP" => 1,
 
             // Index register arithmetic operations (1 byte)
-            "INCIX1" or "DECIX1" or "INCIY1" or "DECIY1" or
-            "INCIX2" or "DECIX2" or "INCIY2" or "DECIY2" => 1,
+            "INCIDX" or "DECIDX" or "INCIDY" or "DECIDY" => 1,
 
             // Index register add immediate (3 bytes)
-            "ADDIX1" or "ADDIX2" or "ADDIY1" or "ADDIY2" => 3,
+            "ADDIDX" or "ADDIDY" => 3,
 
             // Auto-increment/decrement indexed operations (1 byte)
-            "LDAIX1+" or "LDAIY1+" or "STAIX1+" or "STAIY1+" or
-            "LDAIX1-" or "LDAIY1-" or "STAIX1-" or "STAIY1-" => 1,
+            "LDAIDX+" or "LDAIDY+" or "STAIDX+" or "STAIDY+" or
+            "LDAIDX-" or "LDAIDY-" or "STAIDX-" or "STAIDY-" => 1,
 
             // Index register transfer and swap operations (1 byte)
-            "MVIX1IX2" or "MVIX2IX1" or "MVIY1IY2" or "MVIY2IY1" or
-            "MVIX1IY1" or "MVIY1IX1" or "SWPIX1IX2" or "SWPIY1IY2" or "SWPIX1IY1" => 1,
+            "MVIDXIDY" or "MVIDYIDX" or "SWPIDXIDY" => 1,
 
             // Logic operations
             "AND" or "OR" or "XOR" or "NOT" or "SHL" or "SHR" => 1,
@@ -366,15 +361,11 @@ public class Assembler
                 return AssembleLdda_LddbInstruction(mnemonic, parts, currentAddress);
 
             case "LDIX1":
-            case "LDIX2":
             case "LDIY1":
-            case "LDIY2":
                 return AssembleIndexLoadInstruction(mnemonic, parts, currentAddress);
 
             case "ADDIX1":
-            case "ADDIX2":
             case "ADDIY1":
-            case "ADDIY2":
                 return AssembleIndexAddInstruction(mnemonic, parts, currentAddress);
 
             case "INC":
@@ -439,10 +430,6 @@ public class Assembler
             case "DECIX1":
             case "INCIY1":
             case "DECIY1":
-            case "INCIX2":
-            case "DECIX2":
-            case "INCIY2":
-            case "DECIY2":
             case "LDAIX1+":
             case "LDAIY1+":
             case "STAIX1+":
@@ -451,14 +438,10 @@ public class Assembler
             case "LDAIY1-":
             case "STAIX1-":
             case "STAIY1-":
-            case "MVIX1IX2":
             case "MVIX2IX1":
-            case "MVIY1IY2":
             case "MVIY2IY1":
             case "MVIX1IY1":
             case "MVIY1IX1":
-            case "SWPIX1IX2":
-            case "SWPIY1IY2":
             case "SWPIX1IY1":
                 if (parts.Length > 1)
                     throw new AssemblerException($"Instruction {mnemonic} takes no parameters");
@@ -586,8 +569,6 @@ public class Assembler
                 ("LDB", "IDX1") => 0x91,  // LDB (IDX1+offset)
                 ("LDA", "IDY1") => 0x92,  // LDA (IDY1+offset)
                 ("LDB", "IDY1") => 0x93,  // LDB (IDY1+offset)
-                ("LDA", "IDX2") => 0x98,  // LDA (IDX2+offset)
-                ("LDA", "IDY2") => 0x99,  // LDA (IDY2+offset)
                 _ => throw new AssemblerException($"Invalid indexed load instruction: {mnemonic} ({register}+offset)")
             };
             
@@ -603,8 +584,6 @@ public class Assembler
                 ("LDB", "IDX1") => 0x87,  // LDB (IDX1)
                 ("LDA", "IDY1") => 0x88,  // LDA (IDY1)
                 ("LDB", "IDY1") => 0x89,  // LDB (IDY1)
-                ("LDA", "IDX2") => 0x8E,  // LDA (IDX2)
-                ("LDA", "IDY2") => 0x8F,  // LDA (IDY2)
                 _ => throw new AssemblerException($"Invalid indexed load instruction: {mnemonic} ({inner})")
             };
             
