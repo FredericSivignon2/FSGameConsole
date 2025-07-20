@@ -64,7 +64,7 @@ namespace FSAssemblerTests
             // Assert
             result.Should().NotBeNull();
             result.Should().HaveCount(3);
-            result[0].Should().Be(0x1C); // LDIY1 immediate opcode
+            result[0].Should().Be(0x1B); // LDIY1 immediate opcode
             result[1].Should().Be(0xFF); // Low byte
             result[2].Should().Be(0xFF); // High byte
         }
@@ -1046,7 +1046,7 @@ namespace FSAssemblerTests
             result[1].Should().Be(0x0F);  // SOURCE_ARRAY address low (15)
             result[2].Should().Be(0x00);  // SOURCE_ARRAY address high
 
-            result[3].Should().Be(0x1C);  // LDIY1 #imm16
+            result[3].Should().Be(0x1B);  // LDIY1 #imm16
             result[4].Should().Be(0x19);  // DEST_ARRAY address low (25)
             result[5].Should().Be(0x00);  // DEST_ARRAY address high
 
@@ -1280,7 +1280,7 @@ namespace FSAssemblerTests
             // Assert
             result.Should().NotBeNull();
             result.Should().HaveCount(6);
-            result[0].Should().Be(0x1C); // LDIY1 opcode
+            result[0].Should().Be(0x1B); // LDIY1 opcode
             result[1].Should().Be(0x03); // STRING address low byte (position 3)
             result[2].Should().Be(0x00); // STRING address high byte
             result[3].Should().Be(72);   // 'H'
@@ -1398,7 +1398,7 @@ namespace FSAssemblerTests
             result[5].Should().Be(0);    // DATA_PTR address high byte
             
             // Verify LDIY1 #1000
-            result[6].Should().Be(0x1C); // LDIY1 opcode
+            result[6].Should().Be(0x1B); // LDIY1 opcode
             result[7].Should().Be(232);  // 1000 & 0xFF (low byte)
             result[8].Should().Be(3);    // 1000 >> 8 (high byte)
             

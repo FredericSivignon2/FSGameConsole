@@ -330,10 +330,25 @@ public class CPU8Bit
                 SR.UpdateZeroFlag(_regIDX);
                 break;
 
-            case 0x1C: // LDIDY #imm16 - Load IDY with 16-bit immediate value
+            case 0x1B: // LDIDY #imm16 - Load IDY with 16-bit immediate value
                 _regIDY = Memory.ReadWord(PC);
                 PC = (ushort)(PC + 2);
                 SR.UpdateZeroFlag(_regIDY);
+                break;
+
+            case 0x1C: // LDDC addr - Load C from memory address
+                _regC = Memory.ReadByte(PC++);
+                SR.UpdateZeroFlag(_regC);
+                break;
+
+            case 0x1D: // LDDD addr - Load D from memory address
+                _regC = Memory.ReadByte(PC++);
+                SR.UpdateZeroFlag(_regC);
+                break;
+
+            case 0x1E: // LDDE addr - Load E from memory address
+                _regE = Memory.ReadByte(PC++);
+                SR.UpdateZeroFlag(_regE);
                 break;
 
             // === 8-BIT ARITHMETIC INSTRUCTIONS ===
@@ -525,6 +540,18 @@ public class CPU8Bit
                 Memory.WriteByte(address, _regD);
                 break;
 
+            case 0x56: // STE addr - Store E at address
+                address = (ushort)(Memory.ReadByte(PC) | (Memory.ReadByte((ushort)(PC + 1)) << 8));
+                PC = (ushort)(PC + 2);
+                Memory.WriteByte(address, _regE);
+                break;
+
+            case 0x57: // STF addr - Store F at address
+                address = (ushort)(Memory.ReadByte(PC) | (Memory.ReadByte((ushort)(PC + 1)) << 8));
+                PC = (ushort)(PC + 2);
+                Memory.WriteByte(address, _regF);
+                break;
+
             // === SUBROUTINE INSTRUCTIONS ===
             case 0x60: // CALL addr - Call subroutine
                 address = (ushort)(Memory.ReadByte(PC) | (Memory.ReadByte((ushort)(PC + 1)) << 8));
@@ -602,43 +629,76 @@ public class CPU8Bit
                 SR.UpdateZeroFlag(_regC);
                 break;
 
+            case 0x7A: // PUSH D - Push D onto stack
+                SP--;
+                Memory.WriteByte(SP, _regD);
+                break;
+
+            case 0x7B: // POP D - Pop from stack to D
+                _regD = Memory.ReadByte(SP);
+                SP++;
+                SR.UpdateZeroFlag(_regD);
+                break;
+
+            case 0x7C: // PUSH E - Push E onto stack
+                SP--;
+                Memory.WriteByte(SP, _regE);
+                break;
+
+            case 0x7D: // POP E - Pop from stack to E
+                _regE = Memory.ReadByte(SP);
+                SP++;
+                SR.UpdateZeroFlag(_regE);
+                break;
+
+            case 0x7E: // PUSH F - Push F onto stack
+                SP--;
+                Memory.WriteByte(SP, _regF);
+                break;
+
+            case 0x7F: // POP F - Pop from stack to F
+                _regF = Memory.ReadByte(SP);
+                SP++;
+                SR.UpdateZeroFlag(_regF);
+                break;
+
             // === MEMORY LOAD INSTRUCTIONS (0x80-0x85) ===
-            case 0x80: // LDA addr - Load A from memory address
+            case 0x90: // LDA addr - Load A from memory address
                 address = (ushort)(Memory.ReadByte(PC) | (Memory.ReadByte((ushort)(PC + 1)) << 8));
                 PC = (ushort)(PC + 2);
                 _regA = Memory.ReadByte(address);
                 SR.UpdateZeroFlag(_regA);
                 break;
 
-            case 0x81: // LDB addr - Load B from memory address
+            case 0x91: // LDB addr - Load B from memory address
                 address = (ushort)(Memory.ReadByte(PC) | (Memory.ReadByte((ushort)(PC + 1)) << 8));
                 PC = (ushort)(PC + 2);
                 _regB = Memory.ReadByte(address);
                 SR.UpdateZeroFlag(_regB);
                 break;
 
-            case 0x82: // LDC addr - Load C from memory address
+            case 0x92: // LDC addr - Load C from memory address
                 address = (ushort)(Memory.ReadByte(PC) | (Memory.ReadByte((ushort)(PC + 1)) << 8));
                 PC = (ushort)(PC + 2);
                 _regC = Memory.ReadByte(address);
                 SR.UpdateZeroFlag(_regC);
                 break;
 
-            case 0x83: // LDD addr - Load D from memory address
+            case 0x93: // LDD addr - Load D from memory address
                 address = (ushort)(Memory.ReadByte(PC) | (Memory.ReadByte((ushort)(PC + 1)) << 8));
                 PC = (ushort)(PC + 2);
                 _regD = Memory.ReadByte(address);
                 SR.UpdateZeroFlag(_regD);
                 break;
 
-            case 0x84: // LDE addr - Load E from memory address
+            case 0x94: // LDE addr - Load E from memory address
                 address = (ushort)(Memory.ReadByte(PC) | (Memory.ReadByte((ushort)(PC + 1)) << 8));
                 PC = (ushort)(PC + 2);
                 _regE = Memory.ReadByte(address);
                 SR.UpdateZeroFlag(_regE);
                 break;
 
-            case 0x85: // LDF addr - Load F from memory address
+            case 0x95: // LDF addr - Load F from memory address
                 address = (ushort)(Memory.ReadByte(PC) | (Memory.ReadByte((ushort)(PC + 1)) << 8));
                 PC = (ushort)(PC + 2);
                 _regF = Memory.ReadByte(address);

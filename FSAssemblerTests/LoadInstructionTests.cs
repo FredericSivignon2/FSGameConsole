@@ -130,7 +130,7 @@ namespace FSAssemblerTests
             // Assert
             result.Should().NotBeNull();
             result.Should().HaveCount(3);
-            result[0].Should().Be(0x80); // LDA memory opcode
+            result[0].Should().Be(0x90); // LDA memory opcode
             result[1].Should().Be(0x34); // Low byte of address (little-endian)
             result[2].Should().Be(0x12); // High byte of address
         }
@@ -147,7 +147,7 @@ namespace FSAssemblerTests
             // Assert
             result.Should().NotBeNull();
             result.Should().HaveCount(3);
-            result[0].Should().Be(0x81); // LDB memory opcode
+            result[0].Should().Be(0x91); // LDB memory opcode
             result[1].Should().Be(232);  // 1000 & 0xFF = 232
             result[2].Should().Be(3);    // 1000 >> 8 = 3
         }
@@ -164,7 +164,7 @@ namespace FSAssemblerTests
             // Assert
             result.Should().NotBeNull();
             result.Should().HaveCount(3);
-            result[0].Should().Be(0x82); // LDC memory opcode
+            result[0].Should().Be(0x92); // LDC memory opcode
             result[1].Should().Be(0xCD); // Low byte
             result[2].Should().Be(0xAB); // High byte
         }
@@ -181,7 +181,7 @@ namespace FSAssemblerTests
             // Assert
             result.Should().NotBeNull();
             result.Should().HaveCount(3);
-            result[0].Should().Be(0x83); // LDD memory opcode
+            result[0].Should().Be(0x93); // LDD memory opcode
             result[1].Should().Be(0x00); // Low byte
             result[2].Should().Be(0x00); // High byte
         }
@@ -198,7 +198,7 @@ namespace FSAssemblerTests
             // Assert
             result.Should().NotBeNull();
             result.Should().HaveCount(3);
-            result[0].Should().Be(0x84); // LDE memory opcode
+            result[0].Should().Be(0x94); // LDE memory opcode
             result[1].Should().Be(0xFF); // Low byte
             result[2].Should().Be(0xFF); // High byte
         }
@@ -215,7 +215,7 @@ namespace FSAssemblerTests
             // Assert
             result.Should().NotBeNull();
             result.Should().HaveCount(3);
-            result[0].Should().Be(0x85); // LDF memory opcode
+            result[0].Should().Be(0x95); // LDF memory opcode
             result[1].Should().Be(0x00); // Low byte
             result[2].Should().Be(0x80); // High byte
         }

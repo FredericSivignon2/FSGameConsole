@@ -24,7 +24,7 @@ namespace FSCPUTests
         {
             // Arrange - Place data in memory and program in RAM
             _memory.WriteByte(0x2000, 0x42); // Data at memory address
-            _memory.WriteByte(0x0000, 0x80); // LDA addr
+            _memory.WriteByte(0x0000, 0x90); // LDA addr
             _memory.WriteWord(0x0001, 0x2000); // Address to load from
             _cpu.PC = 0x0000;
             _cpu.Start(false);
@@ -43,7 +43,7 @@ namespace FSCPUTests
         {
             // Arrange
             _memory.WriteByte(0x1500, 0x99); // Data at memory address
-            _memory.WriteByte(0x0000, 0x81); // LDB addr
+            _memory.WriteByte(0x0000, 0x91); // LDB addr
             _memory.WriteWord(0x0001, 0x1500); // Address to load from
             _cpu.PC = 0x0000;
             _cpu.Start(false);
@@ -57,10 +57,10 @@ namespace FSCPUTests
         }
 
         [Theory]
-        [InlineData(0x82, 'C')] // LDC addr
-        [InlineData(0x83, 'D')] // LDD addr
-        [InlineData(0x84, 'E')] // LDE addr
-        [InlineData(0x85, 'F')] // LDF addr
+        [InlineData(0x92, 'C')] // LDC addr
+        [InlineData(0x93, 'D')] // LDD addr
+        [InlineData(0x94, 'E')] // LDE addr
+        [InlineData(0x95, 'F')] // LDF addr
         public void MemoryLoadInstructions_ShouldLoadIntoCorrectRegister(byte opcode, char expectedRegister)
         {
             // Arrange
@@ -83,7 +83,7 @@ namespace FSCPUTests
         {
             // Arrange
             _memory.WriteByte(0x2000, 0x00); // Zero data at memory address
-            _memory.WriteByte(0x0000, 0x80); // LDA addr
+            _memory.WriteByte(0x0000, 0x90); // LDA addr
             _memory.WriteWord(0x0001, 0x2000); // Address to load from
             _cpu.PC = 0x0000;
             _cpu.Start(false);
@@ -416,9 +416,9 @@ namespace FSCPUTests
             _memory.WriteByte(0x3000, 0x10); // Data for A
             _memory.WriteByte(0x3001, 0x20); // Data for B
             
-            _memory.WriteByte(0x0000, 0x80); // LDA $3000
+            _memory.WriteByte(0x0000, 0x90); // LDA $3000
             _memory.WriteWord(0x0001, 0x3000);
-            _memory.WriteByte(0x0003, 0x81); // LDB $3001  
+            _memory.WriteByte(0x0003, 0x91); // LDB $3001  
             _memory.WriteWord(0x0004, 0x3001);
             _memory.WriteByte(0x0006, 0xA4); // MOV C,A (C = A = 0x10)
             _memory.WriteByte(0x0007, 0x20); // ADD A,B (A = 0x10 + 0x20 = 0x30)

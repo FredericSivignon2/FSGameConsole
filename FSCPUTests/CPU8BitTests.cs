@@ -390,14 +390,14 @@ namespace FSCPUTests
         public void ExecuteInstruction_ShouldThrowForUnknownOpcode()
         {
             // Arrange - Placer le programme en RAM
-            _memory.WriteByte(0x0000, 0xFF); // Opcode invalide
+            _memory.WriteByte(0x0000, 0xFD); // Opcode invalide
             _cpu.PC = 0x0000; // Forcer PC pour ce test
             _cpu.Start(false);
 
             // Act & Assert
             _cpu.Invoking(c => c.ExecuteCycle())
                 .Should().Throw<InvalidOperationException>()
-                .WithMessage("*Unknown instruction: 0xFF*");
+                .WithMessage("*Unknown instruction: 0xFD*");
         }
 
         [Fact]

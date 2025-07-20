@@ -271,11 +271,9 @@ public static class InstructionCycles
             0x18 => LDDA_ADDR,  // LDDA addr - 5 cycles (opcode + addr + lecture mot)
             0x19 => LDDB_ADDR,  // LDDB addr - 5 cycles
             0x1A => 3,          // LDIX1 #imm16 - 3 cycles (16-bit load)
-            0x1B => 3,          // LDIX2 #imm16 - 3 cycles
-            0x1C => 3,          // LDIY1 #imm16 - 3 cycles
-            0x1D => 3,          // LDIY2 #imm16 - 3 cycles
+            0x1B => 3,          // LDIY1 #imm16 - 3 cycles
             
-            // Arithmétique
+            // Arithmétique²
             0x20 => ADD,        // ADD A,B
             0x21 => SUB,        // SUB A,B
             0x22 => 2,          // ADD16 DA,DB - 2 cycles (opération 16 bits)

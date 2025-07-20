@@ -706,7 +706,7 @@ namespace FSAssemblerTests
             result[1].Should().Be(0x0F);  // SOURCE_ARRAY address low (15)
             result[2].Should().Be(0x00);  // SOURCE_ARRAY address high
 
-            result[3].Should().Be(0x1C);  // LDIY1 #imm16
+            result[3].Should().Be(0x1B);  // LDIY1 #imm16
             result[4].Should().Be(0x19);  // DEST_ARRAY address low (25)
             result[5].Should().Be(0x00);  // DEST_ARRAY address high
 
@@ -856,7 +856,7 @@ namespace FSAssemblerTests
             result[1].Should().Be(0x24);  // SOURCE_STRING address low (36)
             result[2].Should().Be(0x00);  // SOURCE_STRING address high
 
-            result[3].Should().Be(0x1C);  // LDIY1 #imm16
+            result[3].Should().Be(0x1B);  // LDIY1 #imm16
             result[4].Should().Be(0x2A);  // DEST_STRING address low (42)
             result[5].Should().Be(0x00);  // DEST_STRING address high
 
@@ -875,14 +875,14 @@ namespace FSAssemblerTests
             result[14].Should().Be(97);   // ASCII 'a'
             result[15].Should().Be(0x2C); // CMP A,B
             result[16].Should().Be(0x43); // JC
-            result[17].Should().Be(0x1C); // STORE_CHAR address low (28)
+            result[17].Should().Be(0x1B); // STORE_CHAR address low (28)
             result[18].Should().Be(0x00); // STORE_CHAR address high
 
             result[19].Should().Be(0x11); // LDB #imm
             result[20].Should().Be(122);  // ASCII 'z'
             result[21].Should().Be(0x2C); // CMP A,B
             result[22].Should().Be(0x44); // JNC
-            result[23].Should().Be(0x1C); // STORE_CHAR address low (28)
+            result[23].Should().Be(0x1B); // STORE_CHAR address low (28)
             result[24].Should().Be(0x00); // STORE_CHAR address high
 
             result[25].Should().Be(0x11); // LDB #imm
@@ -949,7 +949,7 @@ namespace FSAssemblerTests
             result[4].Should().Be(0x22);   // Low byte
             result[5].Should().Be(0x22);   // High byte
 
-            result[6].Should().Be(0x1C);   // LDIY1 #imm16
+            result[6].Should().Be(0x1B);   // LDIY1 #imm16
             result[7].Should().Be(0x33);   // Low byte
             result[8].Should().Be(0x33);   // High byte
 

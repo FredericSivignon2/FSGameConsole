@@ -43,7 +43,7 @@ namespace FSCPUTests
         public void LDIY1_ImmediateValue_ShouldLoadCorrectly()
         {
             // Arrange - Place program in RAM
-            _memory.WriteByte(0x0000, 0x1C); // LDIY1 #imm16
+            _memory.WriteByte(0x0000, 0x1B); // LDIY1 #imm16
             _memory.WriteByte(0x0001, 0xFF); // Low byte
             _memory.WriteByte(0x0002, 0xFF); // High byte
             _cpu.PC = 0x0000;
@@ -219,46 +219,6 @@ namespace FSCPUTests
         #region Index Register Transfer Tests
 
         [Fact]
-        public void MVIX1IX2_ShouldMoveIDX1ToIDX2()
-        {
-            // Arrange - Setup source register
-            _cpu.IDX = 0xABCD;
-            
-            // Place instruction in RAM
-            _memory.WriteByte(0x0000, 0xF1); // MVIX1IX2
-            _cpu.PC = 0x0000;
-            _cpu.Start(false);
-
-            // Act
-            _cpu.ExecuteCycle();
-
-            // Assert
-            _cpu.IDX.Should().Be(0xABCD); // IDX1 should remain unchanged
-            _cpu.PC.Should().Be(1);
-            _cpu.SR.Zero.Should().BeFalse();
-        }
-
-        [Fact]
-        public void SWPIX1IX2_ShouldSwapIDX1AndIDX2()
-        {
-            // Arrange - Setup both registers with different values
-            _cpu.IDX = 0x1111;
-            
-            // Place instruction in RAM
-            _memory.WriteByte(0x0000, 0xF7); // SWPIX1IX2
-            _cpu.PC = 0x0000;
-            _cpu.Start(false);
-
-            // Act
-            _cpu.ExecuteCycle();
-
-            // Assert
-            _cpu.IDX.Should().Be(0x2222); // IDX1 should now have original IDX2 value
-            _cpu.PC.Should().Be(1);
-            _cpu.SR.Zero.Should().BeFalse();
-        }
-
-        [Fact]
         public void SWPIX1IY1_ShouldSwapIDX1AndIDY1()
         {
             // Arrange - Setup both registers with different values
@@ -291,7 +251,7 @@ namespace FSCPUTests
             byte[] program = 
             {                                 // pos  size
                 0x1A, 0x0F, 0x00,             //  0    3   LDIX1 #SOURCE (0x0019)
-                0x1C, 0x30, 0x00,             //  3    3   LDIY1 #DEST (0x0030)
+                0x1B, 0x30, 0x00,             //  3    3   LDIY1 #DEST (0x0030)
                 0x12, 0x05,                   //  6    2   LDC #5 (counter)
                 // COPY_LOOP: (position 8)
                 0xC4,                         //  8    1   LDAIX1+ (load and increment source)
@@ -354,7 +314,7 @@ namespace FSCPUTests
             byte[] program = 
             {                                 // pos  size
                 0x1A, 0x00, 0x10,             //  0    3   LDIX1 #0x1000
-                0x1C, 0x00, 0x30,             //  6    3   LDIY1 #0x3000
+                0x1B, 0x00, 0x30,             //  6    3   LDIY1 #0x3000
                 // Test increment operations
                 0xE0,                         // 12    1   INCIX1
                 0xE2,                         // 14    1   INCIY1

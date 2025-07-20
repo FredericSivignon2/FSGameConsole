@@ -37,7 +37,7 @@ public class Assembler
         { "LDDA", 0x16 }, { "LDDB", 0x17 },
         
         // Index register load instructions (16-bit immediate)
-        { "LDIDX", 0x1A }, { "LDIDY", 0x1C }, 
+        { "LDIDX", 0x1A }, { "LDIDY", 0x1B }, 
         
         // Arithmetic instructions
         { "ADD", 0x20 }, { "SUB", 0x21 }, { "ADD16", 0x22 }, { "SUB16", 0x23 },
@@ -500,12 +500,12 @@ public class Assembler
             // Memory load
             byte opcode = mnemonic switch
             {
-                "LDA" => 0x80,
-                "LDB" => 0x81,
-                "LDC" => 0x82,
-                "LDD" => 0x83,
-                "LDE" => 0x84,
-                "LDF" => 0x85,
+                "LDA" => 0x90,
+                "LDB" => 0x91,
+                "LDC" => 0x92,
+                "LDD" => 0x93,
+                "LDE" => 0x94,
+                "LDF" => 0x95,
                 _ => throw new AssemblerException($"Invalid load instruction: {mnemonic}")
             };
 
