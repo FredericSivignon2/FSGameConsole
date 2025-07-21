@@ -9,8 +9,8 @@ PrintString:
 
     ; Save IDX1 to be able to use it as a pointer
     ;PUSH16 IDX1
-    PUSH B
-    LDB #0                  ; Load 0 into B for comparison
+    PUSH C
+    LDC #0                  ; Load 0 into C for comparison
 
 PrintString_Loop:
     ; Load the current character from IDX1

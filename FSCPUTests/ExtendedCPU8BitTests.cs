@@ -1,20 +1,20 @@
-using CPU8Bit;
+using FSCPU;
 using FluentAssertions;
 
 namespace FSCPUTests
 {
     /// <summary>
-    /// Unit tests for new CPU8Bit instructions and 16-bit operations
+    /// Unit tests for new FSCPU instructions and 16-bit operations
     /// </summary>
     public class ExtendedCPU8BitTests
     {
         private Memory _memory;
-        private CPU8Bit.CPU8Bit _cpu;
+        private FSCPU.CPU8Bit _cpu;
 
         public ExtendedCPU8BitTests()
         {
             _memory = new Memory(0x10000);
-            _cpu = new CPU8Bit.CPU8Bit(_memory);
+            _cpu = new FSCPU.CPU8Bit(_memory);
         }
 
         // === NEW REGISTER TESTS ===

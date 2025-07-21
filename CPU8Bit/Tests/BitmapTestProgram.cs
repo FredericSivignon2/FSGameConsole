@@ -1,7 +1,7 @@
-using CPU8Bit;
-using CPU8Bit.Graphics;
+using FSCPU;
+using FSCPU.Graphics;
 
-namespace CPU8Bit.Tests;
+namespace FSCPU.Tests;
 
 /// <summary>
 /// Programme de test pour démontrer les nouvelles capacités bitmap

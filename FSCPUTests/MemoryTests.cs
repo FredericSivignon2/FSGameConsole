@@ -1,4 +1,4 @@
-using CPU8Bit;
+using FSCPU;
 using FluentAssertions;
 
 namespace FSCPUTests

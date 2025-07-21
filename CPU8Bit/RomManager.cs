@@ -1,4 +1,4 @@
-namespace CPU8Bit;
+namespace FSCPU;
 
 /// <summary>
 /// Gestionnaire de ROM pour le système de BOOT

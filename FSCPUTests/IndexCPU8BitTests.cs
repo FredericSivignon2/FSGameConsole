@@ -1,21 +1,21 @@
-using CPU8Bit;
+using FSCPU;
 using FluentAssertions;
 
 namespace FSCPUTests
 {
     /// <summary>
-    /// Tests unitaires pour les instructions d'index du CPU8Bit
+    /// Tests unitaires pour les instructions d'index du FSCPU
     /// Tests des nouvelles fonctionnalités d'adressage indexé avec IDX1, IDX2, IDY1, IDY2
     /// </summary>
     public class IndexCPU8BitTests
     {
-        private readonly CPU8Bit.CPU8Bit _cpu;
+        private readonly FSCPU.CPU8Bit _cpu;
         private readonly Memory _memory;
 
         public IndexCPU8BitTests()
         {
             _memory = new Memory();
-            _cpu = new CPU8Bit.CPU8Bit(_memory);
+            _cpu = new FSCPU.CPU8Bit(_memory);
         }
 
         #region Index Register Load Instructions Tests

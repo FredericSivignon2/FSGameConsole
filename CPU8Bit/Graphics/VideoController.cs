@@ -1,6 +1,6 @@
 using System.Drawing;
 
-namespace CPU8Bit.Graphics;
+namespace FSCPU.Graphics;
 
 /// <summary>
 /// Contrôleur vidéo pour l'émulation d'un affichage bitmap 320x200 16 couleurs

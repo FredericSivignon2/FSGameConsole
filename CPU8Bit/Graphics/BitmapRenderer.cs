@@ -2,7 +2,7 @@ using System.Drawing;
 using System.Drawing.Imaging;
 using SystemGraphics = System.Drawing.Graphics;
 
-namespace CPU8Bit.Graphics;
+namespace FSCPU.Graphics;
 
 /// <summary>
 /// Moteur de rendu bitmap pour convertir le frame buffer en image affichable

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 namespace FSAssembler;
 
 /// <summary>
-/// Assembleur principal qui parse et compile le code assembleur
+/// Main assembler that parses and compiles assembly code
 /// </summary>
 public class Assembler
 {
@@ -36,8 +36,9 @@ public class Assembler
         // 16-bit load instructions
         { "LDDA", 0x16 }, { "LDDB", 0x17 },
         
-        // Index register load instructions (16-bit immediate)
-        { "LDIDX", 0x1A }, { "LDIDY", 0x1B }, 
+        // Index register load instructions (16-bit immediate) - support both variants
+        { "LDIDX", 0x1A }, { "LDIDY", 0x1B }, // Simplified names
+        { "LDIX1", 0x1A }, { "LDIX2", 0x1B }, { "LDIY1", 0x1B }, { "LDIY2", 0x1D }, // Full names
         
         // Arithmetic instructions
         { "ADD", 0x20 }, { "SUB", 0x21 }, { "ADD16", 0x22 }, { "SUB16", 0x23 },
@@ -55,11 +56,12 @@ public class Assembler
         // Store instructions
         { "STA", 0x50 }, { "STDA", 0x51 }, { "STDB", 0x52 },
         { "STB", 0x53 }, { "STC", 0x54 }, { "STD", 0x55 },
+        { "STE", 0x56 }, { "STF", 0x57 }, // NEW: Store E and F instructions
         
         // Subroutine instructions
         { "CALL", 0x60 }, { "RET", 0x61 },
         
-        // Stack instructions
+        // Stack instructions (extended with new registers)
         { "PUSH", 0x70 }, { "POP", 0x71 },
         { "PUSH16", 0x72 }, { "POP16", 0x73 },
         
@@ -69,31 +71,44 @@ public class Assembler
         // Relative jump instructions
         { "JR", 0xC0 }, { "JRZ", 0xC1 }, { "JRNZ", 0xC2 }, { "JRC", 0xC3 },
         
-        // Auto-increment/decrement indexed operations
-        { "LDAIX1+", 0xC4 }, { "LDAIDY+", 0xC5 }, { "STAIDX+", 0xC6 }, { "STAIDY+", 0xC7 },
-        { "LDAIX1-", 0xC8 }, { "LDAIDY-", 0xC9 }, { "STAIDX-", 0xCA }, { "STAIDY-", 0xCB },
+        // Auto-increment/decrement indexed operations - support both variants
+        { "LDAIDX+", 0xC4 }, { "LDAIDY+", 0xC5 }, { "STAIDX+", 0xC6 }, { "STAIDY+", 0xC7 },
+        { "LDAIDX-", 0xC8 }, { "LDAIDY-", 0xC9 }, { "STAIDX-", 0xCA }, { "STAIDY-", 0xCB },
+        // Full names for auto-increment/decrement
+        { "LDAIX1+", 0xC4 }, { "LDAIY1+", 0xC5 }, { "STAIX1+", 0xC6 }, { "STAIY1+", 0xC7 },
+        { "LDAIX1-", 0xC8 }, { "LDAIY1-", 0xC9 }, { "STAIX1-", 0xCA }, { "STAIY1-", 0xCB },
         
-        // Index register increment/decrement
+        // Index register increment/decrement - support both variants
         { "INCIDX", 0xE0 }, { "DECIDX", 0xE1 }, { "INCIDY", 0xE2 }, { "DECIDY", 0xE3 },
+        // Full names
+        { "INCIX1", 0xE0 }, { "DECIX1", 0xE1 }, { "INCIY1", 0xE2 }, { "DECIY1", 0xE3 },
+        { "INCIX2", 0xE4 }, { "DECIX2", 0xE5 }, { "INCIY2", 0xE6 }, { "DECIY2", 0xE7 },
         
-        // Index register add immediate
-        { "ADDIX1", 0xE8 }, { "ADDIDY", 0xEA },
+        // Index register add immediate - support both variants
+        { "ADDIDX", 0xE8 }, { "ADDIDY", 0xEA },
+        // Full names  
+        { "ADDIX1", 0xE8 }, { "ADDIX2", 0xE9 }, { "ADDIY1", 0xEA }, { "ADDIY2", 0xEB },
         
         // System call
         { "SYS", 0xF0 },
         
-        // Index register transfer instructions
+        // Index register transfer instructions - support both variants
         { "MVIDXIDY", 0xF5 }, { "MVIDYIDX", 0xF6 },
+        // Full names
+        { "MVIX1IX2", 0xF1 }, { "MVIX2IX1", 0xF2 }, { "MVIY1IY2", 0xF3 }, { "MVIY2IY1", 0xF4 },
+        { "MVIX1IY1", 0xF5 }, { "MVIY1IX1", 0xF6 },
         
-        // Index register swap instructions
-        { "SWPIDXIDY", 0xF9 }
+        // Index register swap instructions - support both variants
+        { "SWPIDXIDY", 0xF9 },
+        // Full names
+        { "SWPIX1IX2", 0xF7 }, { "SWPIY1IY2", 0xF8 }, { "SWPIX1IY1", 0xF9 }
     };
     }
 
     public byte[] AssembleFile(string filePath)
     {
         if (!File.Exists(filePath))
-            throw new FileNotFoundException($"Fichier non trouvé: {filePath}");
+            throw new FileNotFoundException($"File not found: {filePath}");
 
         string[] lines = File.ReadAllLines(filePath);
         return AssembleLines(lines);
@@ -107,7 +122,7 @@ public class Assembler
         var machineCode = new List<byte>();
         ushort currentAddress = 0;
 
-        // Premier passage: collecter les labels
+        // First pass: collect labels
         for (int lineNumber = 0; lineNumber < lines.Length; lineNumber++)
         {
             string line = PreprocessLine(lines[lineNumber]);
@@ -117,7 +132,7 @@ public class Assembler
             {
                 string labelName = line.TrimEnd(':');
                 if (_labels.ContainsKey(labelName))
-                    throw new AssemblerException($"Ligne {lineNumber + 1}: Label '{labelName}' déjà défini");
+                    throw new AssemblerException($"Line {lineNumber + 1}: Label '{labelName}' already defined");
 
                 _labels[labelName] = currentAddress;
             }
@@ -127,7 +142,7 @@ public class Assembler
             }
         }
 
-        // Deuxième passage: générer le code machine
+        // Second pass: generate machine code
         currentAddress = 0;
         for (int lineNumber = 0; lineNumber < lines.Length; lineNumber++)
         {
@@ -142,11 +157,11 @@ public class Assembler
             }
             catch (Exception ex)
             {
-                throw new AssemblerException($"Ligne {lineNumber + 1}", ex);
+                throw new AssemblerException($"Line {lineNumber + 1}", ex);
             }
         }
 
-        // Résoudre les références de labels
+        // Resolve label references
         ResolveLabels(machineCode);
         return machineCode.ToArray();
     }
@@ -216,24 +231,35 @@ public class Assembler
             "LDDA" or "LDDB" when parts.Length == 2 && parts[1].StartsWith('#') => 3,
             "LDDA" or "LDDB" => 3,
 
-            // Index register load instructions (16-bit immediate) - always 3 bytes
-            "LDIDX" or "LDIDY" => 3,
+            // Index register load instructions (16-bit immediate) - always 3 bytes - support both variants
+            "LDIDX" or "LDIDY" or "LDIX1" or "LDIX2" or "LDIY1" or "LDIY2" => 3,
 
             // Increment/Decrement operations
-            "INC" or "DEC" or "INC16" or "DEC16" or "CMP" => 1,
+            "INC" or "DEC" or "INC16" or "DEC16" => 1,
+            
+            // Compare instructions - size depends on format
+            "CMP" when parts.Length == 2 && parts[1].Contains('#') && parts[1].Contains(',') => 
+                parts[1].ToUpper().Contains("DA") || parts[1].ToUpper().Contains("DB") ? (ushort)3 : (ushort)2,
+            "CMP" => 1,
 
-            // Index register arithmetic operations (1 byte)
-            "INCIDX" or "DECIDX" or "INCIDY" or "DECIDY" => 1,
+            // Index register arithmetic operations (1 byte) - support both variants
+            "INCIDX" or "DECIDX" or "INCIDY" or "DECIDY" or 
+            "INCIX1" or "DECIX1" or "INCIY1" or "DECIY1" or 
+            "INCIX2" or "DECIX2" or "INCIY2" or "DECIY2" => 1,
 
-            // Index register add immediate (3 bytes)
-            "ADDIDX" or "ADDIDY" => 3,
+            // Index register add immediate (3 bytes) - support both variants
+            "ADDIDX" or "ADDIDY" or "ADDIX1" or "ADDIX2" or "ADDIY1" or "ADDIY2" => 3,
 
-            // Auto-increment/decrement indexed operations (1 byte)
+            // Auto-increment/decrement indexed operations (1 byte) - support both variants
             "LDAIDX+" or "LDAIDY+" or "STAIDX+" or "STAIDY+" or
-            "LDAIDX-" or "LDAIDY-" or "STAIDX-" or "STAIDY-" => 1,
+            "LDAIDX-" or "LDAIDY-" or "STAIDX-" or "STAIDY-" or
+            "LDAIX1+" or "LDAIY1+" or "STAIX1+" or "STAIY1+" or
+            "LDAIX1-" or "LDAIY1-" or "STAIX1-" or "STAIY1-" => 1,
 
-            // Index register transfer and swap operations (1 byte)
-            "MVIDXIDY" or "MVIDYIDX" or "SWPIDXIDY" => 1,
+            // Index register transfer and swap operations (1 byte) - support both variants
+            "MVIDXIDY" or "MVIDYIDX" or "SWPIDXIDY" or
+            "MVIX1IX2" or "MVIX2IX1" or "MVIY1IY2" or "MVIY2IY1" or 
+            "MVIX1IY1" or "MVIY1IX1" or "SWPIX1IX2" or "SWPIY1IY2" or "SWPIX1IY1" => 1,
 
             // Logic operations
             "AND" or "OR" or "XOR" or "NOT" or "SHL" or "SHR" => 1,
@@ -243,7 +269,7 @@ public class Assembler
             "JR" or "JRZ" or "JRNZ" or "JRC" => 2,
 
             // Store and call instructions
-            "STA" or "STB" or "STC" or "STD" or "STDA" or "STDB" or "CALL" => 3,
+            "STA" or "STB" or "STC" or "STD" or "STE" or "STF" or "STDA" or "STDB" or "CALL" => 3,
 
             // Stack and other single-byte instructions
             "PUSH" or "POP" or "PUSH16" or "POP16" or "MOV" or "SWP" => 1,
@@ -354,18 +380,28 @@ public class Assembler
             case "STB":
             case "STC":
             case "STD":
+            case "STE":
+            case "STF":
                 return AssembleStoreInstruction(mnemonic, parts, currentAddress);
 
             case "LDDA":
             case "LDDB":
                 return AssembleLdda_LddbInstruction(mnemonic, parts, currentAddress);
 
+            case "LDIDX":
+            case "LDIDY":
             case "LDIX1":
+            case "LDIX2": 
             case "LDIY1":
+            case "LDIY2":
                 return AssembleIndexLoadInstruction(mnemonic, parts, currentAddress);
 
+            case "ADDIDX":
+            case "ADDIDY":
             case "ADDIX1":
+            case "ADDIX2":
             case "ADDIY1":
+            case "ADDIY2":
                 return AssembleIndexAddInstruction(mnemonic, parts, currentAddress);
 
             case "INC":
@@ -426,10 +462,26 @@ public class Assembler
             case "NOT":
             case "SHR":
             // Index register operations that don't take parameters
+            case "INCIDX":
+            case "DECIDX":
+            case "INCIDY":
+            case "DECIDY":
             case "INCIX1":
             case "DECIX1":
             case "INCIY1":
             case "DECIY1":
+            case "INCIX2":
+            case "DECIX2":
+            case "INCIY2":
+            case "DECIY2":
+            case "LDAIDX+":
+            case "LDAIDY+":
+            case "STAIDX+":
+            case "STAIDY+":
+            case "LDAIDX-":
+            case "LDAIDY-":
+            case "STAIDX-":
+            case "STAIDY-":
             case "LDAIX1+":
             case "LDAIY1+":
             case "STAIX1+":
@@ -438,11 +490,13 @@ public class Assembler
             case "LDAIY1-":
             case "STAIX1-":
             case "STAIY1-":
+            case "MVIDXIDY":
+            case "MVIDYIDX":
+            case "SWPIDXIDY":
+            case "MVIX1IX2":
             case "MVIX2IX1":
+            case "MVIY1IY2":
             case "MVIY2IY1":
-            case "MVIX1IY1":
-            case "MVIY1IX1":
-            case "SWPIX1IY1":
                 if (parts.Length > 1)
                     throw new AssemblerException($"Instruction {mnemonic} takes no parameters");
                 break;
@@ -454,12 +508,6 @@ public class Assembler
             case "JNC":
             case "JN":
             case "JNN":
-            case "STA":
-            case "STB":
-            case "STC":
-            case "STD":
-            case "STDA":
-            case "STDB":
             case "CALL":
                 if (parts.Length != 2)
                     throw new AssemblerException($"Instruction {mnemonic} requires an address");
@@ -548,7 +596,7 @@ public class Assembler
     }
 
     /// <summary>
-    /// Assemble indexed load instructions like LDA (IDX1), LDB (IDX1+5), etc.
+    /// Assemble indexed load instructions like LDA (IDX), LDB (IDX+5), etc.
     /// </summary>
     private List<byte> AssembleIndexedLoadInstruction(string mnemonic, string indexedOperand, ushort currentAddress)
     {
@@ -565,10 +613,17 @@ public class Assembler
             
             byte opcode = (mnemonic.ToUpper(), register.ToUpper()) switch
             {
+                ("LDA", "IDX") => 0x90,   // LDA (IDX+offset) - simplified register names
+                ("LDB", "IDX") => 0x91,   // LDB (IDX+offset)
+                ("LDA", "IDY") => 0x92,   // LDA (IDY+offset)  
+                ("LDB", "IDY") => 0x93,   // LDB (IDY+offset)
+                // Full register names
                 ("LDA", "IDX1") => 0x90,  // LDA (IDX1+offset)
                 ("LDB", "IDX1") => 0x91,  // LDB (IDX1+offset)
                 ("LDA", "IDY1") => 0x92,  // LDA (IDY1+offset)
                 ("LDB", "IDY1") => 0x93,  // LDB (IDY1+offset)
+                ("LDA", "IDX2") => 0x98,  // LDA (IDX2+offset)
+                ("LDA", "IDY2") => 0x99,  // LDA (IDY2+offset)
                 _ => throw new AssemblerException($"Invalid indexed load instruction: {mnemonic} ({register}+offset)")
             };
             
@@ -580,10 +635,17 @@ public class Assembler
             // Direct indexed addressing (0x86-0x8F range)
             byte opcode = (mnemonic.ToUpper(), inner.ToUpper()) switch
             {
+                ("LDA", "IDX") => 0x86,   // LDA (IDX) - simplified register names
+                ("LDB", "IDX") => 0x87,   // LDB (IDX)
+                ("LDA", "IDY") => 0x88,   // LDA (IDY)
+                ("LDB", "IDY") => 0x89,   // LDB (IDY)
+                // Full register names
                 ("LDA", "IDX1") => 0x86,  // LDA (IDX1)
                 ("LDB", "IDX1") => 0x87,  // LDB (IDX1)
                 ("LDA", "IDY1") => 0x88,  // LDA (IDY1)
                 ("LDB", "IDY1") => 0x89,  // LDB (IDY1)
+                ("LDA", "IDX2") => 0x8E,  // LDA (IDX2)
+                ("LDA", "IDY2") => 0x8F,  // LDA (IDY2)
                 _ => throw new AssemblerException($"Invalid indexed load instruction: {mnemonic} ({inner})")
             };
             
@@ -594,7 +656,7 @@ public class Assembler
     }
 
     /// <summary>
-    /// Assemble indexed store instructions like STA (IDX1), STB (IDX1+5), etc.
+    /// Assemble indexed store instructions like STA (IDX), STB (IDX+5), etc.
     /// </summary>
     private List<byte> AssembleIndexedStoreInstruction(string mnemonic, string indexedOperand, ushort currentAddress)
     {
@@ -611,10 +673,10 @@ public class Assembler
             
             byte opcode = (mnemonic.ToUpper(), register.ToUpper()) switch
             {
-                ("STA", "IDX1") => 0x94,  // STA (IDX1+offset)
-                ("STB", "IDX1") => 0x95,  // STB (IDX1+offset)
-                ("STA", "IDY1") => 0x96,  // STA (IDY1+offset)
-                ("STB", "IDY1") => 0x97,  // STB (IDY1+offset)
+                ("STA", "IDX") => 0x94,  // STA (IDX+offset) - using simplified register names
+                ("STB", "IDX") => 0x95,  // STB (IDX+offset)
+                ("STA", "IDY") => 0x96,  // STA (IDY+offset)
+                ("STB", "IDY") => 0x97,  // STB (IDY+offset)
                 _ => throw new AssemblerException($"Invalid indexed store instruction: {mnemonic} ({register}+offset)")
             };
             
@@ -626,10 +688,10 @@ public class Assembler
             // Direct indexed addressing (0x8A-0x8D range)
             byte opcode = (mnemonic.ToUpper(), inner.ToUpper()) switch
             {
-                ("STA", "IDX1") => 0x8A,  // STA (IDX1)
-                ("STB", "IDX1") => 0x8B,  // STB (IDX1)
-                ("STA", "IDY1") => 0x8C,  // STA (IDY1)
-                ("STB", "IDY1") => 0x8D,  // STB (IDY1)
+                ("STA", "IDX") => 0x8A,  // STA (IDX) - using simplified register names
+                ("STB", "IDX") => 0x8B,  // STB (IDX)
+                ("STA", "IDY") => 0x8C,  // STA (IDY)
+                ("STB", "IDY") => 0x8D,  // STB (IDY)
                 _ => throw new AssemblerException($"Invalid indexed store instruction: {mnemonic} ({inner})")
             };
             
@@ -640,7 +702,7 @@ public class Assembler
     }
 
     /// <summary>
-    /// Parse an indexed expression with offset like "IDX1+5" or "IDY1-10"
+    /// Parse an indexed expression with offset like "IDX+5" or "IDY-10"
     /// </summary>
     private (string register, sbyte offset) ParseIndexedWithOffset(string expression)
     {
@@ -737,7 +799,7 @@ public class Assembler
 
         if (operand.StartsWith('#'))
         {
-            // 16-bit immediate load (like LDIX1 #0x1234)
+            // 16-bit immediate load (like LDIDX #0x1234)
             byte opcode = _mnemonics[mnemonic];
             bytes.Add(opcode);
 
@@ -747,7 +809,7 @@ public class Assembler
         }
         else
         {
-            // Address/label load (like LDIX1 WelcomeMessage) - same as LDDA/LDDB behavior
+            // Address/label load (like LDIDX WelcomeMessage) - same as LDDA/LDDB behavior
             byte opcode = _mnemonics[mnemonic];
             bytes.Add(opcode);
 
@@ -832,23 +894,80 @@ public class Assembler
         var bytes = new List<byte>();
 
         if (parts.Length != 2)
-            throw new AssemblerException("CMP instruction requires two registers (format: CMP A,B or CMP A,C)");
+            throw new AssemblerException("CMP instruction requires either two registers (format: CMP A,B) or register with immediate (format: CMP A,#imm)");
 
-        // Parse registers from the operand part, handling spaces properly
-        var registers = ParseTwoRegisters(parts[1], "CMP");
+        string operand = parts[1];
 
-        string reg1 = registers.reg1;
-        string reg2 = registers.reg2;
-
-        byte opcode = (reg1, reg2) switch
+        // Check if it's immediate value comparison (CMP A,#imm format)
+        if (operand.Contains(',') && operand.Contains('#'))
         {
-            ("A", "B") => 0x2C,
-            ("A", "C") => 0x2F,
-            _ => throw new AssemblerException($"Invalid CMP registers: {reg1},{reg2} (only A,B and A,C supported)")
-        };
+            // Parse register and immediate value
+            var commaParts = operand.Split(',');
+            if (commaParts.Length != 2)
+                throw new AssemblerException("CMP with immediate requires format: CMP register,#value");
 
-        bytes.Add(opcode);
-        return bytes;
+            string register = commaParts[0].Trim().ToUpper();
+            string immediateStr = commaParts[1].Trim();
+
+            if (!immediateStr.StartsWith('#'))
+                throw new AssemblerException("CMP immediate value must be prefixed with '#'");
+
+            // Determine opcode based on register
+            byte opcode = register switch
+            {
+                "A" => 0xD0,   // CMP A,#imm
+                "B" => 0xD1,   // CMP B,#imm
+                "C" => 0xD2,   // CMP C,#imm
+                "D" => 0xD3,   // CMP D,#imm
+                "E" => 0xD4,   // CMP E,#imm
+                "F" => 0xD5,   // CMP F,#imm
+                "DA" => 0xD6,  // CMP DA,#imm16
+                "DB" => 0xD7,  // CMP DB,#imm16
+                _ => throw new AssemblerException($"Invalid CMP register: {register}")
+            };
+
+            bytes.Add(opcode);
+
+            // Parse immediate value
+            string valueStr = immediateStr.Substring(1); // Remove '#'
+            if (register == "DA" || register == "DB")
+            {
+                // 16-bit immediate value
+                ushort value = ParseValue16(valueStr);
+                bytes.Add((byte)(value & 0xFF));        // Low byte first (little-endian)
+                bytes.Add((byte)((value >> 8) & 0xFF)); // High byte second
+            }
+            else
+            {
+                // 8-bit immediate value
+                byte value = ParseSingleValue(valueStr);
+                bytes.Add(value);
+            }
+
+            return bytes;
+        }
+        else if (operand.Contains(','))
+        {
+            // Original register-to-register comparison (CMP A,B format)
+            var registers = ParseTwoRegisters(operand, "CMP");
+
+            string reg1 = registers.reg1;
+            string reg2 = registers.reg2;
+
+            byte opcode = (reg1, reg2) switch
+            {
+                ("A", "B") => 0x2C,
+                ("A", "C") => 0x2F,
+                _ => throw new AssemblerException($"Invalid CMP registers: {reg1},{reg2} (only A,B and A,C supported)")
+            };
+
+            bytes.Add(opcode);
+            return bytes;
+        }
+        else
+        {
+            throw new AssemblerException("CMP instruction requires either two registers (CMP A,B) or register with immediate (CMP A,#imm)");
+        }
     }
 
     private List<byte> AssembleLogicalInstruction(string mnemonic, string[] parts, string originalLine)
@@ -926,6 +1045,7 @@ public class Assembler
 
         byte opcode = (mnemonic.ToUpper(), register) switch
         {
+            // Original stack instructions
             ("PUSH", "A") => 0x70,
             ("POP", "A") => 0x71,
             ("PUSH16", "DA") => 0x72,
@@ -936,6 +1056,13 @@ public class Assembler
             ("POP16", "DB") => 0x77,
             ("PUSH", "C") => 0x78,
             ("POP", "C") => 0x79,
+            // NEW: Extended stack instructions for D, E, F registers
+            ("PUSH", "D") => 0x7A,
+            ("POP", "D") => 0x7B,
+            ("PUSH", "E") => 0x7C,
+            ("POP", "E") => 0x7D,
+            ("PUSH", "F") => 0x7E,
+            ("POP", "F") => 0x7F,
             _ => throw new AssemblerException($"Invalid {mnemonic} register: {register}")
         };
 
@@ -958,12 +1085,20 @@ public class Assembler
 
         byte opcode = (dst, src) switch
         {
+            // Original 8-bit MOV instructions
             ("A", "B") => 0xA0,
             ("A", "C") => 0xA1,
             ("B", "A") => 0xA2,
             ("B", "C") => 0xA3,
             ("C", "A") => 0xA4,
             ("C", "B") => 0xA5,
+            // NEW: 16-bit MOV instructions
+            ("DA", "DB") => 0xAC,
+            ("DB", "DA") => 0xAD,
+            ("DA", "IDX") => 0xB0,
+            ("DA", "IDY") => 0xB1,
+            ("IDX", "DA") => 0xB2,
+            ("IDY", "DA") => 0xB3,
             _ => throw new AssemblerException($"Invalid MOV registers: {dst},{src}")
         };
 
@@ -986,9 +1121,18 @@ public class Assembler
 
         byte opcode = (reg1, reg2) switch
         {
+            // Original 8-bit SWP instructions
             ("A", "B") => 0xA6,
             ("A", "C") => 0xA7,
-            _ => throw new AssemblerException($"Invalid SWP registers: {reg1},{reg2} (only A,B and A,C supported)")
+            // NEW: Extended SWP instructions for all 8-bit registers
+            ("A", "D") => 0xA8,
+            ("A", "E") => 0xA9,
+            ("A", "F") => 0xAA,
+            // NEW: 16-bit SWP instructions
+            ("DA", "DB") => 0xAB,
+            ("DA", "IDX") => 0xAE,
+            ("DA", "IDY") => 0xAF,
+            _ => throw new AssemblerException($"Invalid SWP registers: {reg1},{reg2}")
         };
 
         bytes.Add(opcode);
@@ -1201,11 +1345,11 @@ public class Assembler
 
     private ushort ParseAddress(string address, ushort currentAddress)
     {
-        // If address is something like (IDX1-200), we need to handle it    
+        // If address is something like (IDX-200), we need to handle it    
 
         address = address.Trim();
 
-        // Handle indexed addressing expressions like (IDX1+5) or (IDY1-10)
+        // Handle indexed addressing expressions like (IDX+5) or (IDY-10)
         if (address.StartsWith("(") && address.EndsWith(")"))
         {
             return ParseIndexedAddressExpression(address);
@@ -1235,10 +1379,10 @@ public class Assembler
     }
 
     /// <summary>
-    /// Parse indexed addressing expressions like (IDX1+5), (IDY1-10), (IDX2+0), etc.
+    /// Parse indexed addressing expressions like (IDX+5), (IDY-10), (IDX2+0), etc.
     /// This method handles the evaluation of index register expressions with offsets.
     /// </summary>
-    /// <param name="expression">The indexed expression including parentheses, e.g., "(IDX1+5)"</param>
+    /// <param name="expression">The indexed expression including parentheses, e.g., "(IDX+5)"</param>
     /// <returns>The evaluated address or throws an exception if invalid</returns>
     private ushort ParseIndexedAddressExpression(string expression)
     {
@@ -1248,7 +1392,7 @@ public class Assembler
         // Indexed expressions should now be handled by the specific instruction assemblers
         // (AssembleIndexedLoadInstruction, AssembleIndexedStoreInstruction)
         // If we reach this point, it means an indexed expression was used in a context
-        // where it's not supported (like JMP (IDX1+5) which doesn't exist)
+        // where it's not supported (like JMP (IDX+5) which doesn't exist)
         
         throw new AssemblerException($"Indexed addressing expression '{expression}' is not supported in this context. " +
                                    "Indexed addressing is only available for LDA, LDB, STA, STB instructions.");
@@ -1323,10 +1467,10 @@ public class Assembler
         foreach (var (position, labelName) in _unresolvedReferences)
         {
             if (!_labels.TryGetValue(labelName, out ushort address))
-                throw new AssemblerException($"Label non défini: {labelName}");
+                throw new AssemblerException($"Undefined label: {labelName}");
 
             if (position + 1 >= machineCode.Count)
-                throw new AssemblerException($"Position invalide pour le label {labelName}");
+                throw new AssemblerException($"Invalid position for label {labelName}");
 
             machineCode[position] = (byte)(address & 0xFF);
             machineCode[position + 1] = (byte)((address >> 8) & 0xFF);

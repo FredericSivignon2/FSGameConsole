@@ -1,6 +1,6 @@
-using CPU8Bit.Tests;
+using FSCPU.Tests;
 
-namespace CPU8Bit;
+namespace FSCPU;
 
 class Program
 {

@@ -1,20 +1,20 @@
-using CPU8Bit;
+using FSCPU;
 using FluentAssertions;
 
 namespace FSCPUTests
 {
     /// <summary>
-    /// Tests unitaires pour la classe CPU8Bit principale
+    /// Tests unitaires pour la classe FSCPU principale
     /// </summary>
     public class CPU8BitTests
     {
         private Memory _memory;
-        private CPU8Bit.CPU8Bit _cpu;
+        private FSCPU.CPU8Bit _cpu;
 
         public CPU8BitTests()
         {
             _memory = new Memory(0x10000);
-            _cpu = new CPU8Bit.CPU8Bit(_memory);
+            _cpu = new FSCPU.CPU8Bit(_memory);
         }
 
         [Fact]

@@ -1,4 +1,4 @@
-namespace CPU8Bit;
+namespace FSCPU;
 
 /// <summary>
 /// Unité Arithmétique et Logique du processeur 8 bits
@@ -141,8 +141,32 @@ public class ALU
         _cpu.SR.SetCarryFlag(result < 0);
     }
 
+    /// <summary>
+    /// Compare deux valeurs 16 bits (soustraction sans stocker le résultat)
+    /// </summary>
+    public void Compare(ushort value1, ushort value2)
+    {
+        int result = value1 - value2;
+
+        // Pour la comparaison 16 bits, vérifie si le résultat complet est zéro
+        _cpu.SR.UpdateZeroFlag((ushort)(result & 0xFFFF));
+        
+        // Pour les valeurs 16 bits, le flag négatif est déterminé par le bit 15 du résultat
+        // MAIS : Pour une comparaison non signée, on vérifie le signe réel du résultat, pas le motif de bits
+        _cpu.SR.SetCarryFlag(result < 0);  // Le carry indique un emprunt (résultat < 0)
+        
+        // Pour le flag négatif dans la comparaison non signée 16 bits :
+        // Un résultat est "négatif" s'il serait négatif dans un contexte signé
+        // Cela signifie : le bit 15 du résultat 16 bits doit être vérifié
+        bool bit15Set = ((result & 0x8000) != 0);
+        
+        // Crée un byte fictif où le bit 7 représente l'état de notre bit 15
+        byte fakeByte = bit15Set ? (byte)0x80 : (byte)0x00;
+        _cpu.SR.UpdateNegativeFlag(fakeByte);
+    }
+
     // === OPÉRATIONS 16-BITS POUR REGISTRES DA/DB ===
-    
+
     /// <summary>
     /// Addition de deux valeurs 16 bits
     /// </summary>

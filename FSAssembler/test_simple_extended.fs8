@@ -1,0 +1,29 @@
+; Simple test for new extended instructions
+; Testing just a few new opcodes to start
+
+START:
+    ; Test extended store instructions STE/STF
+    LDE #0x55
+    LDF #0x66
+    STE 0x2000
+    STF 0x2001
+
+    ; Test extended stack operations
+    PUSH D
+    PUSH E  
+    PUSH F
+    POP F
+    POP E
+    POP D
+
+    ; Test extended SWP operations
+    LDA #0x11
+    LDD #0x22
+    SWP A,D
+
+    ; Test 16-bit MOV operations
+    LDDA #0x1234
+    LDDB #0x5678
+    MOV DA,DB
+
+    HALT

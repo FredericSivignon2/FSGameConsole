@@ -1,4 +1,4 @@
-namespace CPU8Bit;
+namespace FSCPU;
 
 /// <summary>
 /// Gestionnaire d'appels système (syscalls) pour l'émulateur

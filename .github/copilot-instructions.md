@@ -3,22 +3,29 @@
 ## Préliminaires :
 
 BIEN UTILISER CE QUI EST DECRIT DANS LES PRELIMINAIRES !!!
+
 1) Dans les commandes Powershell que tu donnes à executer, n'utilise jamais "&&" pour concaténer l'execution de 2 commandes, car cela ne fonctionne pas. Créés plutôt 2 commandes séparées.
    Prête particulièrement attention à ce détail. Donc, je me répète : Quand tu as plusieurs commandes à executer dans un shell (DOS ou Powershell), execute les une par une et n'essaye pas de les concaténer.
    Par exemple, il ne faut pas faire : "cd FSCPUTests && dotnet test", mais le faire en 2 temps : "cd FSCPUTests", puis, une fois que le "cd" est exécuté, faire "dotnet test". Sinon,
    Sinon, il y a une erreur dans la console et impossible de te faire continuer, tout est bloqué (je  pense que tu ne détectes pas de code de retour, du coup tu attends en boucle sans timeout).
 2) Avant toute modification du code, assures toi de déjà bien connaitre l'existant, après analyse complète de tout le projet. De plus, ne supprime aucune fonction/méthode existante sans me demander confirmation
-et bien savoir pourquoi tu la ou les supprimes. En règle général, tout ajout de code ou de logique à l'existant ne doit pas casser les tests unitaires. Donc, sauf cas spécial, il ne devrait pas être nécessaire
-de modifier les tests unitaires existant avec l'ajout de nouvelles fonctionnalités. Cela ne vaut que si une fonctionalité existante doit être modifiée, ce qui sera de plus en plus rare.
+   et bien savoir pourquoi tu la ou les supprimes. En règle général, tout ajout de code ou de logique à l'existant ne doit pas casser les tests unitaires. Donc, sauf cas spécial, il ne devrait pas être nécessaire
+   de modifier les tests unitaires existant avec l'ajout de nouvelles fonctionnalités. Cela ne vaut que si une fonctionalité existante doit être modifiée, ce qui sera de plus en plus rare.
 3) Le projet utilise .NET 9, donc prend bien en compte les dernières nouveautés de cette version dans ce que tu codes.
 4) N'hésites pas à commenter abondamment le projet pour qu'il soit facilement compréhensible.
 5) Tous les commentaires doivent être rédigés en Anglais. Si tu trouves des commentaires en français, renommes les en Anglais.
 6) Quand tu créés un code assembleur, fait attention aux instructions qui utilisent les même registres : Par exemple, si tu déclares un compteur de boucle en utilisant le registre A, que tu vas décrémenté jusqu'à
-0 pour terminer la boucle, n'utilise pas une autre instruction dans la boucle qui va aussi utiliser A, comme LDAIX1+ pour donner un exemple. Donc, tu dois t'assurer de la cohérence des instructions utilisées.
+   0 pour terminer la boucle, n'utilise pas une autre instruction dans la boucle qui va aussi utiliser A, comme LDAIX1+ pour donner un exemple. Donc, tu dois t'assurer de la cohérence des instructions utilisées.
 7) **IMPORTANT** : Les expressions d'adressage indexé comme `(IDX1+5)` ou `(IDY1-10)` ne peuvent pas être utilisées avec des instructions comme JMP ou CALL. Ces expressions sont uniquement
    supportées par les instructions LDA, LDB, STA, STB avec leur syntaxe spécialisée d'adressage indexé. Ne pas confondre avec les labels normaux.
 8) **GESTION DES ERREURS** : Quand tu implémentes des validations d'erreurs dans l'assembleur, attention au fait que les `AssemblerException` sont encapsulées dans des exceptions de type
    "Ligne X" lors de l'assemblage. Pour les tests, il faut vérifier le message de l'inner exception, pas le message de premier niveau.
+9) Quand de nouvelles instructions sont ajoutées pour le CPU8Bit, il faut :
+   * Mettre à jour le fichier InstructionCycles.cs en conséquence : Analayse bien toutes les instructions (opcode) dans CPU8Bit, et assure toi que chacun des opcode est également représenté dans InstructionCycles. Assigne un nombre de cycle "plausible" aux nouveaux opcodes. Si tu penses avoir trouvé des opcodes qui existent dans InstructionCycles mais qui ne sont pas (ou plus) dans CPU8Bit, demande moi quoi faire avant de continuer.
+   * Ensuite, il faut mettre à jour les tests unitaires liés à CPU8Bit. Utilises si possible un fichier de test existant (en fonction de la nature des nouvelles instructions), ne touche surtout pas aux tests existant, ne fait que rajouter les tests nécesaires pour couvrir les nouvelles instructions.
+   * Après, mettre à jour Assembler.cs pour que les instructions assembleurs puissent couvrir les nouvelles instructions. Idem, assures toi de faire le point sur l'existant, pour ne rajouter que ce qui est nécessaire sans toucher à l'existant. De la même manière, si tu penses trouver des instructions dans Assembler.cs qui n'existe pas dans CPU8Bit, demandes moi.
+   * Enfin, créé également des tests unitaires, si possible dans des fichiers existants adaptés au type d'instruction, pour les nouvelles instructions supportées dans Assembler.cs ; pour cela, analyse l'existant avec précision et demande moi si tu détectes quelque chose de non cohérent.
+10) Dans tous les cas, créé un fichier par class. Evite de mettre plusieurs classes dans le même fichier, ce qui rend le fichier difficile à lire.
 
 ## Architecture globale du projet
 
@@ -254,6 +261,7 @@ Le processeur supporte maintenant **80+ instructions** organisées par catégori
 4. **Chargement immédiat** : `LDIX1 #0x8000` - 3 octets
 
 ### Exemples pratiques :
+
 ; Copie efficace de tableau avec auto-increment
 LDIX1 #SOURCE_ARRAY    ; Pointeur source
 LDIY1 #DEST_ARRAY      ; Pointeur destination
@@ -268,10 +276,11 @@ COPY_LOOP:
 LDIX1 #PLAYER_STRUCT   ; Pointeur vers structure
 LDA #100
 STA (IDX1+0)           ; player.x = 100
-LDA #50  
+LDA #50
 STA (IDX1+1)           ; player.y = 50
 LDA #255
 STA (IDX1+2)           ; player.health = 255
+
 ### Limites importantes :
 
 - Offset signed 8-bit : -128 à +127
@@ -489,35 +498,32 @@ La suite de tests **FSCPUTests** contient **116+ tests** et **FSAssemblerTests**
 - **Tests unitaires** : Couverture >95%
   Une chose à faire assez importante quand tu créés du code assembleur (pour les tests unitaires par exemple). Il faut bien indiquer la position en mémoire de chaque
   instruction assembleur. En suivant le même formattage que l'exemple suivant :
-  
-  string[] lines = 
-	{                     // pos  size
-		"START:",         //  -    0   Label
-		"JMP FORWARD1",   //  0    3   Forward reference
-		"",
-		"BACK1:",         //  -    0   Label (position 3)
-		"JMP FORWARD2",   //  3    3   Forward reference
-		"NOP",            //  6    1   
-		"",
-		"BACK2:",         //  -    0   Label (position 7)
-		"JMP END",        //  7    3   Forward reference
-		"",
-		"FORWARD1:",      //  -    0   Label (position 10)
-		"JMP BACK1",      // 10    3   Backward reference
-		"",
-		"FORWARD2:",      //  -    0   Label (position 13)
-		"JMP BACK2",      // 13    3   Backward reference
-		"",
-		"END:",           //  -    0   Label (position 16)
-		"HALT"            // 16    1   Halt
-	};
-	
-	Grâce à cela, il est beaucoup plus simple de debugger les tests ou de modifier le code.
-  
+
+  string[] lines =
+  {                     // pos  size
+  "START:",         //  -    0   Label
+  "JMP FORWARD1",   //  0    3   Forward reference
+  "",
+  "BACK1:",         //  -    0   Label (position 3)
+  "JMP FORWARD2",   //  3    3   Forward reference
+  "NOP",            //  6    1"",
+  "BACK2:",         //  -    0   Label (position 7)
+  "JMP END",        //  7    3   Forward reference
+  "",
+  "FORWARD1:",      //  -    0   Label (position 10)
+  "JMP BACK1",      // 10    3   Backward reference
+  "",
+  "FORWARD2:",      //  -    0   Label (position 13)
+  "JMP BACK2",      // 13    3   Backward reference
+  "",
+  "END:",           //  -    0   Label (position 16)
+  "HALT"            // 16    1   Halt
+  };
+
+  Grâce à cela, il est beaucoup plus simple de debugger les tests ou de modifier le code.
 - **Documentation** : Commentaires XML complets
 - **Separation of concerns** : Responsabilités bien définies
 - **Disposal pattern** : Nettoyage des ressources
 - **Error handling** : Gestion d'erreurs robuste
 
 Cette architecture offre une base solide pour un émulateur vintage performant et extensible, avec un timing authentique, des instructions d'adressage indexé avancées et une excellente couverture de tests.
-

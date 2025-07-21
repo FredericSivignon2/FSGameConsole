@@ -1,4 +1,4 @@
-namespace CPU8Bit.Graphics;
+namespace FSCPU.Graphics;
 
 /// <summary>
 /// Police de caractères bitmap inspirée de l'Amstrad CPC

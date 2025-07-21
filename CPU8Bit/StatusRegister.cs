@@ -1,4 +1,4 @@
-namespace CPU8Bit;
+namespace FSCPU;
 
 /// <summary>
 /// Registre de statut contenant les flags du processeur

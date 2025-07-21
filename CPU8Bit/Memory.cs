@@ -1,4 +1,4 @@
-namespace CPU8Bit;
+namespace FSCPU;
 
 /// <summary>
 /// Classe représentant la mémoire du système (RAM/ROM)

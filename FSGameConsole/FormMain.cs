@@ -1,11 +1,11 @@
-using CPU8Bit;
-using CPU8Bit.Graphics;
+using FSCPU;
+using FSCPU.Graphics;
 
 namespace FSGameConsole
 {
     public partial class FormMain : Form
     {
-        private CPU8Bit.CPU8Bit? _cpu;
+        private FSCPU.CPU8Bit? _cpu;
         private Memory? _memory;
         
         // Nouveau système bitmap CPC authentique
@@ -24,7 +24,7 @@ namespace FSGameConsole
         {
             // Créer la mémoire et le CPU
             _memory = new Memory(0x10000); // 64KB
-            _cpu = new CPU8Bit.CPU8Bit(_memory);
+            _cpu = new FSCPU.CPU8Bit(_memory);
             
             // Initialiser le nouveau système bitmap CPC authentique
             _videoController = new VideoController(_memory);

@@ -1,4 +1,4 @@
-using CPU8Bit;
+using FSCPU;
 using FluentAssertions;
 
 namespace FSCPUTests
@@ -8,14 +8,14 @@ namespace FSCPUTests
     /// </summary>
     public class ALUTests
     {
-        private CPU8Bit.CPU8Bit _cpu;
+        private FSCPU.CPU8Bit _cpu;
         private Memory _memory;
         private ALU _alu;
 
         public ALUTests()
         {
             _memory = new Memory(0x1000);
-            _cpu = new CPU8Bit.CPU8Bit(_memory);
+            _cpu = new FSCPU.CPU8Bit(_memory);
             _alu = _cpu.ALU;
         }
 

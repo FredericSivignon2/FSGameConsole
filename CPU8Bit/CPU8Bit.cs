@@ -1,8 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using FSCPU.Cycles;
+using System.Collections.Generic;
 using System.Net;
 using System.Net.Sockets;
 
-namespace CPU8Bit;
+namespace FSCPU;
 
 /// <summary>
 /// Émulateur de processeur 8 bits avec registres, ALU et unité de contrôle
@@ -750,6 +751,78 @@ public class CPU8Bit
                 SR.UpdateZeroFlag(_regA); // Update flags based on new A value
                 break;
 
+            case 0xA8: // SWP A,D - Swap A and D
+                temp = _regA;
+                _regA = _regD;
+                _regD = temp;
+                SR.UpdateZeroFlag(_regA); // Update flags based on new A value
+                break;
+
+            case 0xA9: // SWP A,E - Swap A and E
+                temp = _regA;
+                _regA = _regE;
+                _regE = temp;
+                SR.UpdateZeroFlag(_regA); // Update flags based on new A value
+                break;
+
+            case 0xAA: // SWP A,F - Swap A and F
+                temp = _regA;
+                _regA = _regF;
+                _regF = temp;
+                SR.UpdateZeroFlag(_regA); // Update flags based on new A value
+                break;
+
+            case 0xAB: // SWP DA,DB - Swap DA and DB
+                ushort dtemp = _regDA;
+                _regDA = _regDB;
+                _regDB = dtemp;
+                SR.UpdateZeroFlag(_regDA); // Update flags based on new DA value
+                break;
+
+            case 0xAC: // MOV DA,DB - Move DB to DA
+                _regDA = _regDB;
+                SR.UpdateZeroFlag(_regDA);
+                break;
+
+            case 0xAD: // MOV DB,DA - Move DA to DB
+                _regDB = _regDA;
+                SR.UpdateZeroFlag(_regDB);
+                break;
+
+            case 0xAE: // SWP DA,IDX - Swap DA and IDX
+                dtemp = _regDA;
+                _regDA = _regIDX;
+                _regIDX = dtemp;
+                SR.UpdateZeroFlag(_regDA); // Update flags based on new DA value
+                break;
+
+            case 0xAF: // SWP DA,IDY - Swap DA and IDY
+                dtemp = _regDA;
+                _regDA = _regIDY;
+                _regIDY = dtemp;
+                SR.UpdateZeroFlag(_regDA); // Update flags based on new DA value
+                break;
+
+            case 0xB0: // MOV DA,IDX - Move IDX to DA
+                _regDA = _regIDX;
+                SR.UpdateZeroFlag(_regDA);
+                break;
+
+            case 0xB1: // MOV DA,IDY - Move IDY to DA
+                _regDA = _regIDY;
+                SR.UpdateZeroFlag(_regDA);
+                break;
+
+            case 0xB2: // MOV IDX,DA - Move DA to IDX
+                _regIDX = _regDA;
+                SR.UpdateZeroFlag(_regIDX);
+                break;
+
+            case 0xB3: // MOV IYX,DA - Move DA to IDY
+                _regIDY = _regDA;
+                SR.UpdateZeroFlag(_regIDY);
+                break;
+
             // === RELATIVE JUMP INSTRUCTIONS (0xC0-0xC3) ===
             case 0xC0: // JR offset - Jump Relative (signed 8-bit offset)
                 sbyte offset = (sbyte)Memory.ReadByte(PC++);
@@ -814,6 +887,64 @@ public class CPU8Bit
             case 0xCB: // STAIDY- - Store A at (IDY), then decrement IDY
                 Memory.WriteByte(_regIDY, _regA);
                 _regIDY--;
+                break;
+
+            case 0xD0: // CMP A, #Imm - Compare A with immediate value
+                {
+                    byte immediate = Memory.ReadByte(PC++);
+                    ALU.Compare(_regA, immediate);
+                }
+                break;
+
+            case 0xD1: // CMP B, #Imm - Compare B with immediate value
+                {
+                    byte immediate = Memory.ReadByte(PC++);
+                    ALU.Compare(_regB, immediate);
+                }
+                break;
+
+            case 0xD2: // CMP C, #Imm - Compare C with immediate value
+                {
+                    byte immediate = Memory.ReadByte(PC++);
+                    ALU.Compare(_regC, immediate);
+                }
+                break;
+
+            case 0xD3: // CMP D, #Imm - Compare D with immediate value
+                {
+                    byte immediate = Memory.ReadByte(PC++);
+                    ALU.Compare(_regD, immediate);
+                }
+                break;
+
+            case 0xD4: // CMP E, #Imm - Compare E with immediate value
+                {
+                    byte immediate = Memory.ReadByte(PC++);
+                    ALU.Compare(_regE, immediate);
+                }
+                break;
+
+            case 0xD5: // CMP F, #Imm - Compare F with immediate value
+                {
+                    byte immediate = Memory.ReadByte(PC++);
+                    ALU.Compare(_regF, immediate);
+                }
+                break;
+
+            case 0xD6: // CMP DA, #Imm16 - Compare DA with immediate value
+                {
+                    ushort immediate16 = Memory.ReadWord(PC);
+                    PC += 2;
+                    ALU.Compare(_regDA, immediate16);
+                }
+                break;
+
+            case 0xD7: // CMP DB, #Imm16 - Compare DB with immediate value
+                {
+                    ushort immediate16 = Memory.ReadWord(PC);
+                    PC += 2;
+                    ALU.Compare(_regDB, immediate16);
+                }
                 break;
 
             // === INDEX REGISTER INCREMENT/DECREMENT INSTRUCTIONS (0xE0-0xE7) ===

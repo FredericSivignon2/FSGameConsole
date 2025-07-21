@@ -1,0 +1,74 @@
+; Test program for new extended instructions
+; Demonstrates the newly added opcodes in Assembler.cs
+
+START:
+    ; Test extended store instructions (0x56-0x57)
+    LDE #0x55           ; Load E with test value
+    LDF #0x66           ; Load F with test value  
+    STE DATA_E          ; Store E at memory address (0x56)
+    STF DATA_F          ; Store F at memory address (0x57)
+
+    ; Test extended stack operations (0x7A-0x7F)
+    LDD #0x77           ; Load D with test value
+    PUSH D              ; Push D onto stack (0x7A)
+    PUSH E              ; Push E onto stack (0x7C) 
+    PUSH F              ; Push F onto stack (0x7E)
+    
+    ; Clear registers
+    LDD #0x00
+    LDE #0x00
+    LDF #0x00
+    
+    ; Pop back in reverse order
+    POP F               ; Pop from stack to F (0x7F)
+    POP E               ; Pop from stack to E (0x7D)
+    POP D               ; Pop from stack to D (0x7B)
+    
+    ; Test 16-bit register operations (0xAC-0xB3)
+    LDDA #0x1234        ; Load DA with test value
+    LDDB #0x5678        ; Load DB with test value
+    LDIDX #0x9ABC       ; Load IDX with test value
+    LDIDY #0xDEF0       ; Load IDY with test value
+    
+    ; Test MOV operations between 16-bit registers
+    MOV DA,DB           ; Move DB to DA (0xAC)
+    MOV DB,DA           ; Move DA to DB (0xAD)
+    MOV DA,IDX          ; Move IDX to DA (0xB0)
+    MOV DA,IDY          ; Move IDY to DA (0xB1)
+    MOV IDX,DA          ; Move DA to IDX (0xB2)
+    MOV IDY,DA          ; Move DA to IDY (0xB3)
+    
+    ; Test extended SWP operations (0xA8-0xAF)
+    LDA #0x11           ; Load A with test value
+    LDD #0x22           ; Load D with test value
+    LDE #0x33           ; Load E with test value
+    LDF #0x44           ; Load F with test value
+    
+    SWP A,D             ; Swap A and D (0xA8)
+    SWP A,E             ; Swap A and E (0xA9)  
+    SWP A,F             ; Swap A and F (0xAA)
+    
+    ; Test 16-bit swaps
+    LDDA #0xAAAA        ; Load DA with test value
+    LDDB #0xBBBB        ; Load DB with test value
+    SWP DA,DB           ; Swap DA and DB (0xAB)
+    SWP DA,IDX          ; Swap DA and IDX (0xAE)
+    SWP DA,IDY          ; Swap DA and IDY (0xAF)
+
+    ; Test indexed addressing (simplified IDX/IDY notation)
+    LDIDX #ARRAY_DATA   ; Point IDX to array
+    LDA (IDX)           ; Load A from (IDX) - direct indexed addressing
+    LDB (IDX+1)         ; Load B from (IDX+1) - indexed with offset
+    LDIDY #DATA_E       ; Point IDY to data area
+    STA (IDY)           ; Store A at (IDY) - direct indexed addressing
+    STB (IDY+2)         ; Store B at (IDY+2) - indexed with offset
+
+    HALT                ; End program
+
+; Data section
+DATA_E:
+    DB 0                ; Storage for E register test
+DATA_F:
+    DB 0                ; Storage for F register test
+ARRAY_DATA:
+    DB 0x99, 0xAA, 0xBB, 0xCC  ; Test array data

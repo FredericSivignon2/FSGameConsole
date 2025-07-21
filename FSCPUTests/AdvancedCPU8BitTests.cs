@@ -1,20 +1,20 @@
-using CPU8Bit;
+using FSCPU;
 using FluentAssertions;
 
 namespace FSCPUTests
 {
     /// <summary>
-    /// Unit tests for advanced CPU8Bit instructions - Memory loads, register transfers, and relative jumps
+    /// Unit tests for advanced FSCPU instructions - Memory loads, register transfers, and relative jumps
     /// </summary>
     public class AdvancedCPU8BitTests
     {
         private Memory _memory;
-        private CPU8Bit.CPU8Bit _cpu;
+        private FSCPU.CPU8Bit _cpu;
 
         public AdvancedCPU8BitTests()
         {
             _memory = new Memory(0x10000);
-            _cpu = new CPU8Bit.CPU8Bit(_memory);
+            _cpu = new FSCPU.CPU8Bit(_memory);
         }
 
         // === MEMORY LOAD INSTRUCTIONS TESTS (0x80-0x85) ===
