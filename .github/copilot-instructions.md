@@ -16,7 +16,7 @@ BIEN UTILISER CE QUI EST DECRIT DANS LES PRELIMINAIRES !!!
 5) Tous les commentaires doivent être rédigés en Anglais. Si tu trouves des commentaires en français, renommes les en Anglais.
 6) Quand tu créés un code assembleur, fait attention aux instructions qui utilisent les même registres : Par exemple, si tu déclares un compteur de boucle en utilisant le registre A, que tu vas décrémenté jusqu'à
    0 pour terminer la boucle, n'utilise pas une autre instruction dans la boucle qui va aussi utiliser A, comme LDAIX1+ pour donner un exemple. Donc, tu dois t'assurer de la cohérence des instructions utilisées.
-7) **IMPORTANT** : Les expressions d'adressage indexé comme `(IDX1+5)` ou `(IDY1-10)` ne peuvent pas être utilisées avec des instructions comme JMP ou CALL. Ces expressions sont uniquement
+7) **IMPORTANT** : Les expressions d'adressage indexé comme `(IDX+5)` ou `(IDY-10)` ne peuvent pas être utilisées avec des instructions comme JMP ou CALL. Ces expressions sont uniquement
    supportées par les instructions LDA, LDB, STA, STB avec leur syntaxe spécialisée d'adressage indexé. Ne pas confondre avec les labels normaux.
 8) **GESTION DES ERREURS** : Quand tu implémentes des validations d'erreurs dans l'assembleur, attention au fait que les `AssemblerException` sont encapsulées dans des exceptions de type
    "Ligne X" lors de l'assemblage. Pour les tests, il faut vérifier le message de l'inner exception, pas le message de premier niveau.
@@ -29,12 +29,14 @@ BIEN UTILISER CE QUI EST DECRIT DANS LES PRELIMINAIRES !!!
 
 ## Architecture globale du projet
 
-Le projet FSGameConsole est un émulateur de console de jeux vintage, s'inspirant du style Amstrad CPC. Il se compose de 4 projets principaux :
+Le projet FSGameConsole est un émulateur de console de jeux vintage, s'inspirant du style Amstrad CPC. Il se compose de **6 projets principaux** :
 
 - **FSGameConsole** : Application WinForm principale (.NET 9)
 - **FSCPU** (CPU8Bit) : Cœur de l'émulateur - processeur 8 bits, mémoire, périphériques
 - **FSAssembler** : Assembleur pour compiler du code .fs8 en binaire exécutable
-- **FSCPUTests** : Suite de tests unitaires complète (116+ tests)
+- **FSCPUTests** : Suite de tests unitaires complète (120+ tests)
+- **FSAssemblerTests** : Suite de tests assembleur complète (280+ tests)
+- **FSAssemblerEditorExtension** : Extension Visual Studio pour syntaxe highlighting (.NET Framework 4.7.2)
 
 ## Microprocesseur 8 bits FS8 (Enhanced)
 
@@ -51,10 +53,9 @@ Le projet FSGameConsole est un émulateur de console de jeux vintage, s'inspiran
 
 - DA, DB : 2 registres 16 bits pour calculs accélérés et stockage étendu
 
-**Registres d'index 16 bits (nouveauté majeure) :**
+**Registres d'index 16 bits (simplifiés) :**
 
-- IDX1, IDX2 : 2 registres d'index X pour adressage avancé
-- IDY1, IDY2 : 2 registres d'index Y pour adressage avancé
+- IDX, IDY : 2 registres d'index pour adressage avancé (simplifié par rapport à la v1 avec 4 registres)
 
 ### Architecture Little-Endian
 
@@ -64,9 +65,9 @@ Le processeur utilise l'organisation little-endian pour les valeurs 16 bits :
 - High byte stocké à l'adresse + 1
 - Exemple : 0x1234 → [0x34][0x12] en mémoire
 
-### Jeu d'instructions étendu
+### Jeu d'instructions étendu (120+ instructions)
 
-Le processeur supporte maintenant **80+ instructions** organisées par catégories :
+Le processeur supporte maintenant **120+ instructions** organisées par catégories :
 
 **Instructions de base (0x00-0x01) :**
 
@@ -82,16 +83,17 @@ Le processeur supporte maintenant **80+ instructions** organisées par catégori
 - 0x14 : LDE #imm - Load E immediate
 - 0x15 : LDF #imm - Load F immediate
 
-**Instructions de chargement 16 bits (0x16-0x1D) :**
+**Instructions de chargement 16 bits (0x16-0x1E) :**
 
 - 0x16 : LDDA #imm16 - Load DA with 16-bit immediate
 - 0x17 : LDDB #imm16 - Load DB with 16-bit immediate
 - 0x18 : LDDA addr - Load DA from memory address
 - 0x19 : LDDB addr - Load DB from memory address
-- 0x1A : LDIX1 #imm16 - Load IDX1 with 16-bit immediate (**NOUVEAU**)
-- 0x1B : LDIX2 #imm16 - Load IDX2 with 16-bit immediate (**NOUVEAU**)
-- 0x1C : LDIY1 #imm16 - Load IDY1 with 16-bit immediate (**NOUVEAU**)
-- 0x1D : LDIY2 #imm16 - Load IDY2 with 16-bit immediate (**NOUVEAU**)
+- 0x1A : LDIDX #imm16 - Load IDX with 16-bit immediate
+- 0x1B : LDIDY #imm16 - Load IDY with 16-bit immediate
+- 0x1C : LDDC addr - Load C immediate (implémentation actuelle)
+- 0x1D : LDDD addr - Load C immediate (bug - devrait charger D)
+- 0x1E : LDDE addr - Load E immediate
 
 **Instructions arithmétiques (0x20-0x2F) :**
 
@@ -135,7 +137,7 @@ Le processeur supporte maintenant **80+ instructions** organisées par catégori
 - 0x45 : JN addr - Jump if Negative
 - 0x46 : JNN addr - Jump if Not Negative
 
-**Instructions de stockage (0x50-0x55) :**
+**Instructions de stockage (0x50-0x57) :**
 
 - 0x50 : STA addr - Store A at address
 - 0x51 : STDA addr - Store DA at address (16-bit)
@@ -143,13 +145,15 @@ Le processeur supporte maintenant **80+ instructions** organisées par catégori
 - 0x53 : STB addr - Store B at address
 - 0x54 : STC addr - Store C at address
 - 0x55 : STD addr - Store D at address
+- 0x56 : STE addr - Store E at address
+- 0x57 : STF addr - Store F at address
 
 **Instructions de sous-routines (0x60-0x61) :**
 
 - 0x60 : CALL addr - Call subroutine
 - 0x61 : RET - Return from subroutine
 
-**Instructions de pile (0x70-0x79) :**
+**Instructions de pile (0x70-0x7F) :**
 
 - 0x70 : PUSH A - Push A onto stack
 - 0x71 : POP A - Pop from stack to A
@@ -161,40 +165,23 @@ Le processeur supporte maintenant **80+ instructions** organisées par catégori
 - 0x77 : POP16 DB - Pop from stack to DB (16-bit)
 - 0x78 : PUSH C - Push C onto stack
 - 0x79 : POP C - Pop from stack to C
+- 0x7A : PUSH D - Push D onto stack
+- 0x7B : POP D - Pop from stack to D
+- 0x7C : PUSH E - Push E onto stack
+- 0x7D : POP E - Pop from stack to E
+- 0x7E : PUSH F - Push F onto stack
+- 0x7F : POP F - Pop from stack to F
 
-**Instructions de chargement mémoire (0x80-0x8F) :**
+**Instructions de chargement mémoire (0x90-0x95) :**
 
-- 0x80 : LDA addr - Load A from memory address
-- 0x81 : LDB addr - Load B from memory address
-- 0x82 : LDC addr - Load C from memory address
-- 0x83 : LDD addr - Load D from memory address
-- 0x84 : LDE addr - Load E from memory address
-- 0x85 : LDF addr - Load F from memory address
-- 0x86 : LDA (IDX1) - Load A from address pointed by IDX1 (**NOUVEAU**)
-- 0x87 : LDB (IDX1) - Load B from address pointed by IDX1 (**NOUVEAU**)
-- 0x88 : LDA (IDY1) - Load A from address pointed by IDY1 (**NOUVEAU**)
-- 0x89 : LDB (IDY1) - Load B from address pointed by IDY1 (**NOUVEAU**)
-- 0x8A : STA (IDX1) - Store A at address pointed by IDX1 (**NOUVEAU**)
-- 0x8B : STB (IDX1) - Store B at address pointed by IDX1 (**NOUVEAU**)
-- 0x8C : STA (IDY1) - Store A at address pointed by IDY1 (**NOUVEAU**)
-- 0x8D : STB (IDY1) - Store B at address pointed by IDY1 (**NOUVEAU**)
-- 0x8E : LDA (IDX2) - Load A from address pointed by IDX2 (**NOUVEAU**)
-- 0x8F : LDA (IDY2) - Load A from address pointed by IDY2 (**NOUVEAU**)
+- 0x90 : LDA addr - Load A from memory address
+- 0x91 : LDB addr - Load B from memory address
+- 0x92 : LDC addr - Load C from memory address
+- 0x93 : LDD addr - Load D from memory address
+- 0x94 : LDE addr - Load E from memory address
+- 0x95 : LDF addr - Load F from memory address
 
-**Instructions d'adressage indexé avec offset (0x90-0x99) :**
-
-- 0x90 : LDA (IDX1+offset) - Load A from IDX1 + signed 8-bit offset (**NOUVEAU**)
-- 0x91 : LDB (IDX1+offset) - Load B from IDX1 + signed 8-bit offset (**NOUVEAU**)
-- 0x92 : LDA (IDY1+offset) - Load A from IDY1 + signed 8-bit offset (**NOUVEAU**)
-- 0x93 : LDB (IDY1+offset) - Load B from IDY1 + signed 8-bit offset (**NOUVEAU**)
-- 0x94 : STA (IDX1+offset) - Store A at IDX1 + signed 8-bit offset (**NOUVEAU**)
-- 0x95 : STB (IDX1+offset) - Store B at IDX1 + signed 8-bit offset (**NOUVEAU**)
-- 0x96 : STA (IDY1+offset) - Store A at IDY1 + signed 8-bit offset (**NOUVEAU**)
-- 0x97 : STB (IDY1+offset) - Store B at IDY1 + signed 8-bit offset (**NOUVEAU**)
-- 0x98 : LDA (IDX2+offset) - Load A from IDX2 + signed 8-bit offset (**NOUVEAU**)
-- 0x99 : LDA (IDY2+offset) - Load A from IDY2 + signed 8-bit offset (**NOUVEAU**)
-
-**Instructions de transfert entre registres (0xA0-0xA7) :**
+**Instructions de transfert entre registres (0xA0-0xB3) :**
 
 - 0xA0 : MOV A,B - Move B to A
 - 0xA1 : MOV A,C - Move C to A
@@ -204,6 +191,18 @@ Le processeur supporte maintenant **80+ instructions** organisées par catégori
 - 0xA5 : MOV C,B - Move B to C
 - 0xA6 : SWP A,B - Swap A and B
 - 0xA7 : SWP A,C - Swap A and C
+- 0xA8 : SWP A,D - Swap A and D
+- 0xA9 : SWP A,E - Swap A and E
+- 0xAA : SWP A,F - Swap A and F
+- 0xAB : SWP DA,DB - Swap DA and DB
+- 0xAC : MOV DA,DB - Move DB to DA
+- 0xAD : MOV DB,DA - Move DA to DB
+- 0xAE : SWP DA,IDX - Swap DA and IDX
+- 0xAF : SWP DA,IDY - Swap DA and IDY
+- 0xB0 : MOV DA,IDX - Move IDX to DA
+- 0xB1 : MOV DA,IDY - Move IDY to DA
+- 0xB2 : MOV IDX,DA - Move DA to IDX
+- 0xB3 : MOV IDY,DA - Move DA to IDY
 
 **Instructions de saut relatif (0xC0-0xC3) :**
 
@@ -214,87 +213,81 @@ Le processeur supporte maintenant **80+ instructions** organisées par catégori
 
 **Instructions auto-increment/decrement (0xC4-0xCB) :**
 
-- 0xC4 : LDAIX1+ - Load A from (IDX1), then increment IDX1 (**NOUVEAU**)
-- 0xC5 : LDAIY1+ - Load A from (IDY1), then increment IDY1 (**NOUVEAU**)
-- 0xC6 : STAIX1+ - Store A at (IDX1), then increment IDX1 (**NOUVEAU**)
-- 0xC7 : STAIY1+ - Store A at (IDY1), then increment IDY1 (**NOUVEAU**)
-- 0xC8 : LDAIX1- - Load A from (IDX1), then decrement IDX1 (**NOUVEAU**)
-- 0xC9 : LDAIY1- - Load A from (IDY1), then decrement IDY1 (**NOUVEAU**)
-- 0xCA : STAIX1- - Store A at (IDX1), then decrement IDX1 (**NOUVEAU**)
-- 0xCB : STAIY1- - Store A at (IDY1), then decrement IDY1 (**NOUVEAU**)
+- 0xC4 : LDAIDX+ - Load A from (IDX), then increment IDX
+- 0xC5 : LDAIDY+ - Load A from (IDY), then increment IDY
+- 0xC6 : STAIDX+ - Store A at (IDX), then increment IDX
+- 0xC7 : STAIDY+ - Store A at (IDY), then increment IDY
+- 0xC8 : LDAIDX- - Load A from (IDX), then decrement IDX
+- 0xC9 : LDAIDY- - Load A from (IDY), then decrement IDY
+- 0xCA : STAIDX- - Store A at (IDX), then decrement IDX
+- 0xCB : STAIDY- - Store A at (IDY), then decrement IDY
 
-**Instructions arithmétiques sur registres d'index (0xE0-0xEB) :**
+**Instructions de comparaison immédiate (0xD0-0xD7) - NOUVELLES :**
 
-- 0xE0 : INCIX1 - Increment IDX1 (**NOUVEAU**)
-- 0xE1 : DECIX1 - Decrement IDX1 (**NOUVEAU**)
-- 0xE2 : INCIY1 - Increment IDY1 (**NOUVEAU**)
-- 0xE3 : DECIY1 - Decrement IDY1 (**NOUVEAU**)
-- 0xE4 : INCIX2 - Increment IDX2 (**NOUVEAU**)
-- 0xE5 : DECIX2 - Decrement IDX2 (**NOUVEAU**)
-- 0xE6 : INCIY2 - Increment IDY2 (**NOUVEAU**)
-- 0xE7 : DECIY2 - Decrement IDY2 (**NOUVEAU**)
-- 0xE8 : ADDIX1 #imm16 - Add 16-bit immediate to IDX1 (**NOUVEAU**)
-- 0xE9 : ADDIX2 #imm16 - Add 16-bit immediate to IDX2 (**NOUVEAU**)
-- 0xEA : ADDIY1 #imm16 - Add 16-bit immediate to IDY1 (**NOUVEAU**)
-- 0xEB : ADDIY2 #imm16 - Add 16-bit immediate to IDY2 (**NOUVEAU**)
+- 0xD0 : CMP A,#imm - Compare A with immediate value
+- 0xD1 : CMP B,#imm - Compare B with immediate value
+- 0xD2 : CMP C,#imm - Compare C with immediate value
+- 0xD3 : CMP D,#imm - Compare D with immediate value
+- 0xD4 : CMP E,#imm - Compare E with immediate value
+- 0xD5 : CMP F,#imm - Compare F with immediate value
+- 0xD6 : CMP DA,#imm16 - Compare DA with 16-bit immediate value
+- 0xD7 : CMP DB,#imm16 - Compare DB with 16-bit immediate value
 
-**Appels système et transferts d'index (0xF0-0xF9) :**
+**Instructions arithmétiques sur registres d'index (0xE0-0xE3, 0xE8, 0xEA) :**
 
-- 0xF0 : SYS - System call (voir section système d'appels)
-- 0xF1 : MVIX1IX2 - Move IDX1 to IDX2 (**NOUVEAU**)
-- 0xF2 : MVIX2IX1 - Move IDX2 to IDX1 (**NOUVEAU**)
-- 0xF3 : MVIY1IY2 - Move IDY1 to IDY2 (**NOUVEAU**)
-- 0xF4 : MVIY2IY1 - Move IDY2 to IDY1 (**NOUVEAU**)
-- 0xF5 : MVIX1IY1 - Move IDX1 to IDY1 (**NOUVEAU**)
-- 0xF6 : MVIY1IX1 - Move IDY1 to IDX1 (**NOUVEAU**)
-- 0xF7 : SWPIX1IX2 - Swap IDX1 and IDX2 (**NOUVEAU**)
-- 0xF8 : SWPIY1IY2 - Swap IDY1 and IDY2 (**NOUVEAU**)
-- 0xF9 : SWPIX1IY1 - Swap IDX1 and IDY1 (**NOUVEAU**)
+- 0xE0 : INCIDX - Increment IDX
+- 0xE1 : DECIDX - Decrement IDX
+- 0xE2 : INCIDY - Increment IDY
+- 0xE3 : DECIDY - Decrement IDY
+- 0xE8 : ADDIDX #imm16 - Add 16-bit immediate to IDX
+- 0xEA : ADDIDY #imm16 - Add 16-bit immediate to IDY
+
+**Instructions de transfert d'index (0xF5, 0xF6, 0xF9) :**
+
+- 0xF5 : MVIDXIDY - Move IDX to IDY
+- 0xF6 : MVIDYIDX - Move IDY to IDX
+- 0xF9 : SWPIDXIDY - Swap IDX and IDY
+
+**Instructions étendues (0xFE-0xFF) :**
+
+- 0xFE : Extended instruction set 1 (réservé pour extensions futures)
+- 0xFF : Extended instruction set 2 (réservé pour extensions futures)
 
 ## Instructions d'adressage indexé - Guide d'utilisation
 
 ### Syntaxes supportées :
 
-1. **Adressage indexé direct** : `LDA (IDX1)`, `STA (IDY1)` - 1 octet
-2. **Adressage indexé avec offset** : `LDA (IDX1+5)`, `STA (IDY1-10)` - 2 octets
-3. **Auto-increment/decrement** : `LDAIX1+`, `STAIY1-` - 1 octet
-4. **Chargement immédiat** : `LDIX1 #0x8000` - 3 octets
+1. **Auto-increment/decrement** : `LDAIDX+`, `STAIDY-` - 1 octet
+2. **Chargement immédiat** : `LDIDX #0x8000` - 3 octets
 
 ### Exemples pratiques :
 
+```assembly
 ; Copie efficace de tableau avec auto-increment
-LDIX1 #SOURCE_ARRAY    ; Pointeur source
-LDIY1 #DEST_ARRAY      ; Pointeur destination
+LDIDX #SOURCE_ARRAY    ; Pointeur source
+LDIDY #DEST_ARRAY      ; Pointeur destination
 LDB #10                ; Compteur
 COPY_LOOP:
-    LDAIX1+            ; Charge et incrémente source
-    STAIY1+            ; Stocke et incrémente destination
+    LDAIDX+            ; Charge et incrémente source
+    STAIDY+            ; Stocke et incrémente destination
     DEC B              ; Décrémente compteur
     JNZ COPY_LOOP      ; Continue si pas fini
-
-; Accès aux membres d'une structure
-LDIX1 #PLAYER_STRUCT   ; Pointeur vers structure
-LDA #100
-STA (IDX1+0)           ; player.x = 100
-LDA #50
-STA (IDX1+1)           ; player.y = 50
-LDA #255
-STA (IDX1+2)           ; player.health = 255
+```
 
 ### Limites importantes :
 
-- Offset signed 8-bit : -128 à +127
-- Adressage indexé limité aux instructions LDA, LDB, STA, STB
-- Auto-increment/decrement limité à IDX1 et IDY1 avec registre A
+- Auto-increment/decrement limité aux registres IDX/IDY avec registre A
+- Les expressions complexes comme (IDX+5) ne sont PAS implémentées dans cette version
 
 ## Organisation mémoire (Style Amstrad CPC authentique)
 
 Le système utilise un plan mémoire de 64KB organisé comme suit :
-0x0000-0x7FFF : RAM programme (32KB)
-0x8000-0xBFFF : Mémoire vidéo bitmap unifiée (16KB) - Style CPC authentique
-0xC000-0xF3FF : RAM étendue (13KB)
-0xF400-0xF7FF : ROM BOOT (1KB) - **ZONE ROM PROTÉGÉE**
-0xF800-0xFFFF : BIOS/Système (2KB)
+
+- 0x0000-0x7FFF : RAM programme (32KB)
+- 0x8000-0xBFFF : Mémoire vidéo bitmap unifiée (16KB) - Style CPC authentique
+- 0xC000-0xF3FF : RAM étendue (13KB)
+- 0xF400-0xF7FF : ROM BOOT (1KB) - **ZONE ROM PROTÉGÉE**
+- 0xF800-0xFFFF : BIOS/Système (2KB)
 
 ### Zones importantes :
 
@@ -349,7 +342,7 @@ Le système dispose d'une **ROM BOOT** de 1KB à 0xF400 contenant :
 - Signature système : "FS System v1.0"
 - Police Amstrad CPC complète (256 caractères × 8 octets)
 - Routines de démarrage
-- Gestionnaire PrintChar
+- Gestionnaire PrintChar et PrintString
 
 ### Fonctionnalités :
 
@@ -363,34 +356,40 @@ L'assembleur compile les fichiers **.fs8** en binaires exécutables :
 
 ### Fonctionnalités :
 
-- **Instructions** : Support complet du jeu d'instructions (80+ instructions)
+- **Instructions** : Support complet du jeu d'instructions (120+ instructions)
 - **Labels** : Résolution des adresses symboliques
 - **Données** : Directive DB pour octets bruts
 - **Commentaires** : Support des commentaires avec ';'
 - **Compilation** : Génération de fichiers .bin
-- **Adressage indexé** : Support complet des nouvelles instructions d'index
+- **Instructions CMP immediate** : Support complet des nouvelles comparaisons
 
-### Usage :FSAssembler input.fs8 output.bin
+### Usage :
+```
+FSAssembler input.fs8 output.bin
+```
 
 ## Tests unitaires complets
 
-La suite de tests **FSCPUTests** contient **116+ tests** et **FSAssemblerTests** contient **240+ tests** couvrant :
-
-### Couverture FSCPUTests :
+### Suite FSCPUTests (120+ tests) :
 
 - **CPU8BitTests** : Tests du processeur principal (28 tests)
-- **ExtendedCPU8BitTests** : Tests des nouvelles instructions (27 tests)
-- **IndexCPU8BitTests** : Tests des instructions d'index (20+ tests) (**NOUVEAU**)
+- **ExtendedCPU8BitTests** : Tests des instructions étendues (25+ tests)
+- **MissingOpcodeCPU8BitTests** : Tests des opcodes manquants (50+ tests)
+- **ALU16BitCompareTests** : Tests des comparaisons 16-bit (10+ tests)
+- **QuickCompareImmediateTests** : Tests rapides des CMP immediate (5+ tests)
 - **MemoryTests** : Tests de la mémoire (14 tests)
 - **ALUTests** : Tests de l'unité arithmétique (26 tests)
 - **StatusRegisterTests** : Tests des flags (18 tests)
-- **IntegrationTests** : Tests d'intégration (10 tests)
+- **AdvancedCPU8BitTests** : Tests d'intégration avancés (10+ tests)
 
-### Couverture FSAssemblerTests :
+### Suite FSAssemblerTests (280+ tests) :
 
 - **AssemblerBasicTests** : Tests de base de l'assembleur (18 tests)
 - **LoadInstructionTests** : Tests instructions de chargement (32 tests)
-- **IndexInstructionTests** : Tests instructions d'index (61 tests) (**NOUVEAU**)
+- **CompareImmediateInstructionTests** : Tests CMP immediate (40+ tests) **NOUVEAU**
+- **Push16Pop16Tests** : Tests PUSH16/POP16 (25+ tests)
+- **ExtendedInstructionTests** : Tests instructions étendues (60+ tests)
+- **MiscellaneousInstructionTests** : Tests instructions diverses (30+ tests)
 - **ArithmeticInstructionTests** : Tests arithmétiques (25 tests)
 - **LogicalInstructionTests** : Tests logiques (22 tests)
 - **JumpInstructionTests** : Tests de sauts (28 tests)
@@ -408,12 +407,15 @@ La suite de tests **FSCPUTests** contient **116+ tests** et **FSAssemblerTests**
 - Sauts conditionnels
 - Pile et sous-routines
 - Système mémoire authentique
-- **Instructions d'index** : Tous les modes d'adressage
-- **Programmes réalistes** : Copie de tableaux, accès structures, etc.
+- **Instructions CMP immediate** : Tous les registres 8-bit et 16-bit
+- **Correction ALU 16-bit** : Fix du bug des comparaisons 16-bit
+- **Programmes réalistes** : ROM boot, routines système
 
-  Dans les tests unitaires (pas ceux d'intégration), il faut utiliser "_cpu.Start(false);" avec l'argument "false" pour que le timer ne se déclenche pas.
-  On veut pouvoir contrôler ce qui est executé, donc ne pas risquer de passer à l'instruction suivante alors que l'on veut tester l'execution de l'instruction
-  définie dans le test.
+### Notes importantes pour les tests :
+
+Dans les tests unitaires (pas ceux d'intégration), il faut utiliser `_cpu.Start(false);` avec l'argument `false` pour que le timer ne se déclenche pas.
+On veut pouvoir contrôler ce qui est executé, donc ne pas risquer de passer à l'instruction suivante alors que l'on veut tester l'execution de l'instruction
+définie dans le test.
 
 ## Interface utilisateur WinForm
 
@@ -421,7 +423,7 @@ La suite de tests **FSCPUTests** contient **116+ tests** et **FSAssemblerTests**
 
 - **Écran émulé** : Panel 320x200 avec rendu bitmap
 - **Contrôles CPU** : Start/Stop/Reset/ColdBoot/Step
-- **Affichage registres** : État en temps réel (incluant IDX1, IDX2, IDY1, IDY2)
+- **Affichage registres** : État en temps réel (incluant IDX, IDY)
 - **Dump mémoire** : RAM, bitmap, ROM
 - **Chargement** : Programmes .bin et démonstrations
 - **Métriques** : Performance CPU en temps réel
@@ -432,7 +434,24 @@ La suite de tests **FSCPUTests** contient **116+ tests** et **FSAssemblerTests**
 - **Rendu optimisé** : BitmapRenderer pour performance
 - **Debug avancé** : Affichage multi-zones mémoire
 - **System calls** : Démonstrations interactives
-- **Registres d'index** : Affichage des 4 nouveaux registres
+- **Registres simplifiés** : Affichage IDX/IDY (simplifié par rapport à 4 registres)
+
+## Extension Visual Studio
+
+Le projet **FSAssemblerEditorExtension** fournit :
+
+### Fonctionnalités :
+
+- **Syntax Highlighting** : Coloration syntaxique pour fichiers .fs8
+- **Classification** : Instructions, registres, commentaires, labels
+- **Content Type** : Support natif des fichiers .fs8 dans Visual Studio
+- **Package VSIX** : Installation simple via Visual Studio
+
+### Technologies :
+
+- **.NET Framework 4.7.2** : Requis par l'API Visual Studio
+- **MEF (Managed Extensibility Framework)** : Architecture extensible
+- **Visual Studio SDK** : API d'extensibilité
 
 ## Problématiques techniques résolues
 
@@ -449,22 +468,27 @@ La suite de tests **FSCPUTests** contient **116+ tests** et **FSAssemblerTests**
 ### 3. Jeu d'instructions limité
 
 **Problème** : Seulement ~20 instructions
-**Solution** : Extension à 80+ instructions avec support 16 bits et registres d'index
+**Solution** : Extension à 120+ instructions avec support 16 bits et registres d'index
 
 ### 4. Tests insuffisants
 
 **Problème** : Couverture partielle
-**Solution** : 240+ tests assembleur + 116+ tests CPU couvrant tous les aspects
+**Solution** : 280+ tests assembleur + 120+ tests CPU couvrant tous les aspects
 
-### 5. Rendu vidéo basique
+### 5. Comparaisons 16-bit défectueuses
 
-**Problème** : Affichage texte simple
-**Solution** : VideoController + BitmapRenderer authentique
+**Problème** : Bug majeur dans ALU.Compare(ushort, ushort) - flags incorrects
+**Solution** : Correction de la logique de comparaison 16-bit avec tests exhaustifs
 
-### 6. Adressage mémoire limité
+### 6. Instructions CMP immediate manquantes
 
-**Problème** : Pas d'adressage indexé avancé
-**Solution** : 4 registres d'index avec auto-increment, offset et transferts
+**Problème** : Pas de comparaisons avec valeurs immédiates
+**Solution** : Ajout des opcodes 0xD0-0xD7 avec support assembleur complet
+
+### 7. Extension Visual Studio
+
+**Problème** : Pas de support éditeur pour .fs8
+**Solution** : Extension complète avec syntax highlighting et content type
 
 ## Développements futurs possibles
 
@@ -492,38 +516,44 @@ La suite de tests **FSCPUTests** contient **116+ tests** et **FSAssemblerTests**
 - **Observer** : DisplayTimer pour rendu
 - **Strategy** : SystemCallManager pour appels système
 - **Factory** : RomManager pour gestion ROM
+- **Template Method** : InstructionCycles pour timing
 
 ### Bonnes pratiques :
 
 - **Tests unitaires** : Couverture >95%
-  Une chose à faire assez importante quand tu créés du code assembleur (pour les tests unitaires par exemple). Il faut bien indiquer la position en mémoire de chaque
-  instruction assembleur. En suivant le même formattage que l'exemple suivant :
 
-  string[] lines =
-  {                     // pos  size
-  "START:",         //  -    0   Label
-  "JMP FORWARD1",   //  0    3   Forward reference
-  "",
-  "BACK1:",         //  -    0   Label (position 3)
-  "JMP FORWARD2",   //  3    3   Forward reference
-  "NOP",            //  6    1"",
-  "BACK2:",         //  -    0   Label (position 7)
-  "JMP END",        //  7    3   Forward reference
-  "",
-  "FORWARD1:",      //  -    0   Label (position 10)
-  "JMP BACK1",      // 10    3   Backward reference
-  "",
-  "FORWARD2:",      //  -    0   Label (position 13)
-  "JMP BACK2",      // 13    3   Backward reference
-  "",
-  "END:",           //  -    0   Label (position 16)
-  "HALT"            // 16    1   Halt
-  };
+Une chose à faire assez importante quand tu créés du code assembleur (pour les tests unitaires par exemple). Il faut bien indiquer la position en mémoire de chaque
+instruction assembleur. En suivant le même formattage que l'exemple suivant :
 
-  Grâce à cela, il est beaucoup plus simple de debugger les tests ou de modifier le code.
+```csharp
+string[] lines =
+{                     // pos  size
+    "START:",         //  -    0   Label
+    "JMP FORWARD1",   //  0    3   Forward reference
+    "",
+    "BACK1:",         //  -    0   Label (position 3)
+    "JMP FORWARD2",   //  3    3   Forward reference
+    "NOP",            //  6    1"",
+    "BACK2:",         //  -    0   Label (position 7)
+    "JMP END",        //  7    3   Forward reference
+    "",
+    "FORWARD1:",      //  -    0   Label (position 10)
+    "JMP BACK1",      // 10    3   Backward reference
+    "",
+    "FORWARD2:",      //  -    0   Label (position 13)
+    "JMP BACK2",      // 13    3   Backward reference
+    "",
+    "END:",           //  -    0   Label (position 16)
+    "HALT"            // 16    1   Halt
+};
+```
+
+Grâce à cela, il est beaucoup plus simple de debugger les tests ou de modifier le code.
+
 - **Documentation** : Commentaires XML complets
 - **Separation of concerns** : Responsabilités bien définies
 - **Disposal pattern** : Nettoyage des ressources
 - **Error handling** : Gestion d'erreurs robuste
+- **Extension architecture** : Support Visual Studio intégré
 
-Cette architecture offre une base solide pour un émulateur vintage performant et extensible, avec un timing authentique, des instructions d'adressage indexé avancées et une excellente couverture de tests.
+Cette architecture offre une base solide pour un émulateur vintage performant et extensible, avec un timing authentique, des instructions CMP immediate complètes, une correction des bugs ALU 16-bit, et une excellente couverture de tests avec support éditeur professionnel.

@@ -17,7 +17,7 @@ PrintString_Loop:
     LDA (IDX1)              ; Load character pointed by IDX1 into A
 
     ; Check if it's the end character (0x00)
-    CMP A, B
+    CMP A, #0
     JZ PrintString_End    ; If zero, terminate
     
     CALL PrintChar         ; Call PrintChar to print the character
@@ -28,7 +28,7 @@ PrintString_Loop:
     
 PrintString_End:
     ; Restore IDX1
-    POP16 IDX1
+    ; POP16 IDX1
     RET                   ; Return from function
 
 PrintChar:
@@ -48,121 +48,7 @@ PrintChar:
     PUSH16 DA
     PUSH16 DB
     
-    ; Calculate address of character matrix in AmstradCPCFont
-    ; Each character = 8 bytes, so address = AmstradCPCFont + (A * 8)
-    
-    ; Clear DB and extend A to 16-bit safely
-    LDDB 0                ; Clear DB (DB = 0x0000)
-    
-    ; Use repeated addition to calculate A * 8 in DB
-    ; This avoids overflow since we work with 16-bit register
-    LDF 8                 ; Counter for 8 additions
-    
-PrintChar_Multiply:
-    ; Convert A to 16-bit and add to DB
-    ; Since ADD16 extends 8-bit operands, this is safe
-    ADD16 DB, A           ; DB = DB + A (A is extended to 16-bit)
-    DEC F                 ; Decrement counter
-    JNZ PrintChar_Multiply ; Continue until F = 0
-    
-    ; Now DB contains A * 8 without overflow
-    ; Calculate absolute address: AmstradCPCFont + offset
-    LDDA AmstradCPCFont   ; Load base address of font
-    ADD16 DA, DB          ; Add character offset (DA = DA + DB)
-    
-    ; Now DA points to character data (8 bytes)
-    
-    ; Calculate starting pixel position
-    ; X pixel = B * 8, Y pixel = C * 8
-    
-    ; Process X - multiply B by 8 using shifts
-    LDF B                 ; Copy B to F
-    SHL F                 ; F = B * 2
-    SHL F                 ; F = B * 4  
-    SHL F                 ; F = B * 8 (X position in pixels)
-    
-    ; Process Y - multiply C by 8 using shifts
-    SHL C                 ; C = C * 2
-    SHL C                 ; C = C * 4
-    SHL C                 ; C = C * 8 (Y position in pixels)
-    
-    ; Loop to draw the 8 lines of the character
-    LDA 8                 ; Line counter
-    
-PrintChar_LineLoop:
-    PUSH A                ; Save line counter
-    
-    ; Load current line data
-    LDB (DA)              ; Load pixel line from DA
-    
-    ; Draw the 8 pixels of this line
-    LDE 8                 ; Pixel counter
-    
-PrintChar_PixelLoop:
-    ; Test the most significant bit of B
-    LDA B
-    AND A, 0x80           ; Mask bit 7
-    JZ PrintChar_BackgroundPixel
-    
-    ; Draw foreground pixel - get foreground color
-    ; We need to access the saved foreground color (D)
-    ; Since we've pushed many things, we need to peek at the right position
-    ; For now, let's use a simpler approach
-    LDA 15                ; Use white as foreground for now
-    JMP PrintChar_DrawPixel
-    
-PrintChar_BackgroundPixel:
-    ; Draw background pixel  
-    LDA 0                 ; Use black as background for now
-    
-PrintChar_DrawPixel:
-    ; System call to draw pixel
-    ; SYSCALL 0x20: SetPixel - BC = X, D = Y, A after syscall = color
-    
-    ; Prepare parameters for SetPixel syscall
-    ; X is in F (base X position + pixel offset)
-    ; Y is in C (base Y position + current line)
-    
-    PUSH A                ; Save color
-    LDA 0x20              ; SetPixel syscall code
-    LDB 0                 ; High byte of X = 0
-    MOV C, F              ; Low byte of X = current position
-    MOV D, C              ; Y position
-    SYS                   ; System call
-    POP A                 ; Get color back for next syscall parameter
-    
-    ; Move to next pixel
-    INC F                 ; Increment X position
-    SHL B                 ; Shift line data
-    DEC E                 ; Decrement pixel counter
-    JNZ PrintChar_PixelLoop
-    
-    ; Move to next line
-    INC16 DA              ; Point to next font line
-    INC C                 ; Increment Y position
-    ; Restore starting X position for next line
-    POP B                 ; Get original B
-    PUSH B                ; Save it again
-    LDF B                 ; Copy B to F
-    SHL F                 ; F = B * 2
-    SHL F                 ; F = B * 4  
-    SHL F                 ; F = B * 8 (X position in pixels)
-    
-    POP A                 ; Get line counter back
-    DEC A                 ; Decrement counter
-    JNZ PrintChar_LineLoop
-    
-    ; Restore all registers
-    POP16 DB
-    POP16 DA
-    POP E
-    POP D
-    POP C
-    POP B
-    POP A
-    
-    RET
-
+   
 WelcomeMessage:
     DB "FS System v1.0"
 ScreenSize:
