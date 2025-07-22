@@ -11,98 +11,137 @@ namespace FSAssembler;
 /// </summary>
 public class Assembler
 {
-    private readonly Dictionary<string, byte> _mnemonics;
+    private readonly Dictionary<string, InstructionInfo> _instructions;
     private readonly Dictionary<string, ushort> _labels;
     private readonly List<(int position, string label)> _unresolvedReferences;
 
     public Assembler()
     {
-        _mnemonics = InitializeMnemonics();
+        _instructions = InitializeInstructions();
         _labels = new Dictionary<string, ushort>(StringComparer.OrdinalIgnoreCase);
         _unresolvedReferences = new List<(int, string)>();
     }
 
-    private Dictionary<string, byte> InitializeMnemonics()
+    private Dictionary<string, InstructionInfo> InitializeInstructions()
     {
-        return new Dictionary<string, byte>(StringComparer.OrdinalIgnoreCase)
-    {
-        // Basic instructions
-        { "NOP", 0x00 }, { "HALT", 0x01 },
-        
-        // 8-bit load instructions
-        { "LDA", 0x10 }, { "LDB", 0x11 }, { "LDC", 0x12 },
-        { "LDD", 0x13 }, { "LDE", 0x14 }, { "LDF", 0x15 },
-        
-        // 16-bit load instructions
-        { "LDDA", 0x16 }, { "LDDB", 0x17 },
-        
-        // Index register load instructions (16-bit immediate) - support both variants
-        { "LDIDX", 0x1A }, { "LDIDY", 0x1B }, // Simplified names
-        { "LDIX1", 0x1A }, { "LDIX2", 0x1B }, { "LDIY1", 0x1B }, { "LDIY2", 0x1D }, // Full names
-        
-        // Arithmetic instructions
-        { "ADD", 0x20 }, { "SUB", 0x21 }, { "ADD16", 0x22 }, { "SUB16", 0x23 },
-        { "INC16", 0x24 }, { "DEC16", 0x25 }, { "INC", 0x28 }, { "DEC", 0x29 },
-        { "CMP", 0x2C },
-        
-        // Logical instructions
-        { "AND", 0x30 }, { "OR", 0x31 }, { "XOR", 0x32 }, { "NOT", 0x33 },
-        { "SHL", 0x34 }, { "SHR", 0x35 },
-        
-        // Jump instructions
-        { "JMP", 0x40 }, { "JZ", 0x41 }, { "JNZ", 0x42 },
-        { "JC", 0x43 }, { "JNC", 0x44 }, { "JN", 0x45 }, { "JNN", 0x46 },
-        
-        // Store instructions
-        { "STA", 0x50 }, { "STDA", 0x51 }, { "STDB", 0x52 },
-        { "STB", 0x53 }, { "STC", 0x54 }, { "STD", 0x55 },
-        { "STE", 0x56 }, { "STF", 0x57 }, // NEW: Store E and F instructions
-        
-        // Subroutine instructions
-        { "CALL", 0x60 }, { "RET", 0x61 },
-        
-        // Stack instructions (extended with new registers)
-        { "PUSH", 0x70 }, { "POP", 0x71 },
-        { "PUSH16", 0x72 }, { "POP16", 0x73 },
-        
-        // Register transfer instructions
-        { "MOV", 0xA0 }, { "SWP", 0xA6 },
-        
-        // Relative jump instructions
-        { "JR", 0xC0 }, { "JRZ", 0xC1 }, { "JRNZ", 0xC2 }, { "JRC", 0xC3 },
-        
-        // Auto-increment/decrement indexed operations - support both variants
-        { "LDAIDX+", 0xC4 }, { "LDAIDY+", 0xC5 }, { "STAIDX+", 0xC6 }, { "STAIDY+", 0xC7 },
-        { "LDAIDX-", 0xC8 }, { "LDAIDY-", 0xC9 }, { "STAIDX-", 0xCA }, { "STAIDY-", 0xCB },
-        // Full names for auto-increment/decrement
-        { "LDAIX1+", 0xC4 }, { "LDAIY1+", 0xC5 }, { "STAIX1+", 0xC6 }, { "STAIY1+", 0xC7 },
-        { "LDAIX1-", 0xC8 }, { "LDAIY1-", 0xC9 }, { "STAIX1-", 0xCA }, { "STAIY1-", 0xCB },
-        
-        // Index register increment/decrement - support both variants
-        { "INCIDX", 0xE0 }, { "DECIDX", 0xE1 }, { "INCIDY", 0xE2 }, { "DECIDY", 0xE3 },
-        // Full names
-        { "INCIX1", 0xE0 }, { "DECIX1", 0xE1 }, { "INCIY1", 0xE2 }, { "DECIY1", 0xE3 },
-        { "INCIX2", 0xE4 }, { "DECIX2", 0xE5 }, { "INCIY2", 0xE6 }, { "DECIY2", 0xE7 },
-        
-        // Index register add immediate - support both variants
-        { "ADDIDX", 0xE8 }, { "ADDIDY", 0xEA },
-        // Full names  
-        { "ADDIX1", 0xE8 }, { "ADDIX2", 0xE9 }, { "ADDIY1", 0xEA }, { "ADDIY2", 0xEB },
-        
-        // System call
-        { "SYS", 0xF0 },
-        
-        // Index register transfer instructions - support both variants
-        { "MVIDXIDY", 0xF5 }, { "MVIDYIDX", 0xF6 },
-        // Full names
-        { "MVIX1IX2", 0xF1 }, { "MVIX2IX1", 0xF2 }, { "MVIY1IY2", 0xF3 }, { "MVIY2IY1", 0xF4 },
-        { "MVIX1IY1", 0xF5 }, { "MVIY1IX1", 0xF6 },
-        
-        // Index register swap instructions - support both variants
-        { "SWPIDXIDY", 0xF9 },
-        // Full names
-        { "SWPIX1IX2", 0xF7 }, { "SWPIY1IY2", 0xF8 }, { "SWPIX1IY1", 0xF9 }
-    };
+        return new Dictionary<string, InstructionInfo>(StringComparer.OrdinalIgnoreCase)
+        {
+            // Basic instructions (0x00-0x01) - CONFIRMED in CPU8Bit.cs
+            { "NOP", new InstructionInfo { BaseOpcode = 0x00, BaseSize = 1, Description = "No Operation" } },
+            { "HALT", new InstructionInfo { BaseOpcode = 0x01, BaseSize = 1, Description = "Stop processor" } },
+
+            // 8-bit load instructions (0x10-0x15) - CONFIRMED in CPU8Bit.cs
+            // Note: These have variable size based on operand format
+            { "LDA", new InstructionInfo { BaseOpcode = 0x10, BaseSize = 2, HasVariableSize = true, RequiresSpecialHandling = true, Description = "Load A register" } },
+            { "LDB", new InstructionInfo { BaseOpcode = 0x11, BaseSize = 2, HasVariableSize = true, RequiresSpecialHandling = true, Description = "Load B register" } },
+            { "LDC", new InstructionInfo { BaseOpcode = 0x12, BaseSize = 2, HasVariableSize = true, RequiresSpecialHandling = true, Description = "Load C register" } },
+            { "LDD", new InstructionInfo { BaseOpcode = 0x13, BaseSize = 2, HasVariableSize = true, RequiresSpecialHandling = true, Description = "Load D register" } },
+            { "LDE", new InstructionInfo { BaseOpcode = 0x14, BaseSize = 2, HasVariableSize = true, RequiresSpecialHandling = true, Description = "Load E register" } },
+            { "LDF", new InstructionInfo { BaseOpcode = 0x15, BaseSize = 2, HasVariableSize = true, RequiresSpecialHandling = true, Description = "Load F register" } },
+
+            // 16-bit load instructions (0x16-0x1B) - CONFIRMED in CPU8Bit.cs
+            { "LDDA", new InstructionInfo { BaseOpcode = 0x16, BaseSize = 3, HasVariableSize = true, RequiresSpecialHandling = true, Description = "Load DA register (16-bit)" } },
+            { "LDDB", new InstructionInfo { BaseOpcode = 0x17, BaseSize = 3, HasVariableSize = true, RequiresSpecialHandling = true, Description = "Load DB register (16-bit)" } },
+            { "LDIDX", new InstructionInfo { BaseOpcode = 0x1A, BaseSize = 3, RequiresSpecialHandling = true, Description = "Load IDX register (16-bit)" } },
+            { "LDIDY", new InstructionInfo { BaseOpcode = 0x1B, BaseSize = 3, RequiresSpecialHandling = true, Description = "Load IDY register (16-bit)" } },
+
+            // Arithmetic instructions (0x20-0x2F) - CONFIRMED in CPU8Bit.cs
+            { "ADD", new InstructionInfo { BaseOpcode = 0x20, BaseSize = 1, Description = "Add A,B" } },
+            { "SUB", new InstructionInfo { BaseOpcode = 0x21, BaseSize = 1, Description = "Subtract A,B" } },
+            { "ADD16", new InstructionInfo { BaseOpcode = 0x22, BaseSize = 1, Description = "Add DA,DB (16-bit)" } },
+            { "SUB16", new InstructionInfo { BaseOpcode = 0x23, BaseSize = 1, Description = "Subtract DA,DB (16-bit)" } },
+            { "INC16", new InstructionInfo { BaseOpcode = 0x24, BaseSize = 1, RequiresSpecialHandling = true, Description = "Increment 16-bit register" } },
+            { "DEC16", new InstructionInfo { BaseOpcode = 0x25, BaseSize = 1, RequiresSpecialHandling = true, Description = "Decrement 16-bit register" } },
+            { "INC", new InstructionInfo { BaseOpcode = 0x28, BaseSize = 1, RequiresSpecialHandling = true, Description = "Increment 8-bit register" } },
+            { "DEC", new InstructionInfo { BaseOpcode = 0x29, BaseSize = 1, RequiresSpecialHandling = true, Description = "Decrement 8-bit register" } },
+            { "CMP", new InstructionInfo { BaseOpcode = 0x2C, BaseSize = 1, HasVariableSize = true, RequiresSpecialHandling = true, Description = "Compare registers or register with immediate" } },
+
+            // Logical instructions (0x30-0x39) - CONFIRMED in CPU8Bit.cs
+            { "AND", new InstructionInfo { BaseOpcode = 0x30, BaseSize = 1, RequiresSpecialHandling = true, Description = "Logical AND" } },
+            { "OR", new InstructionInfo { BaseOpcode = 0x31, BaseSize = 1, RequiresSpecialHandling = true, Description = "Logical OR" } },
+            { "XOR", new InstructionInfo { BaseOpcode = 0x32, BaseSize = 1, RequiresSpecialHandling = true, Description = "Logical XOR" } },
+            { "NOT", new InstructionInfo { BaseOpcode = 0x33, BaseSize = 1, Description = "Logical NOT A" } },
+            { "SHL", new InstructionInfo { BaseOpcode = 0x34, BaseSize = 1, RequiresSpecialHandling = true, Description = "Shift Left" } },
+            { "SHR", new InstructionInfo { BaseOpcode = 0x35, BaseSize = 1, Description = "Shift Right A" } },
+
+            // Jump instructions (0x40-0x46) - CONFIRMED in CPU8Bit.cs
+            { "JMP", new InstructionInfo { BaseOpcode = 0x40, BaseSize = 3, Description = "Unconditional jump" } },
+            { "JZ", new InstructionInfo { BaseOpcode = 0x41, BaseSize = 3, Description = "Jump if Zero" } },
+            { "JNZ", new InstructionInfo { BaseOpcode = 0x42, BaseSize = 3, Description = "Jump if Not Zero" } },
+            { "JC", new InstructionInfo { BaseOpcode = 0x43, BaseSize = 3, Description = "Jump if Carry" } },
+            { "JNC", new InstructionInfo { BaseOpcode = 0x44, BaseSize = 3, Description = "Jump if No Carry" } },
+            { "JN", new InstructionInfo { BaseOpcode = 0x45, BaseSize = 3, Description = "Jump if Negative" } },
+            { "JNN", new InstructionInfo { BaseOpcode = 0x46, BaseSize = 3, Description = "Jump if Not Negative" } },
+
+            // Store instructions (0x50-0x57) - CONFIRMED in CPU8Bit.cs
+            { "STA", new InstructionInfo { BaseOpcode = 0x50, BaseSize = 3, RequiresSpecialHandling = true, Description = "Store A at address" } },
+            { "STDA", new InstructionInfo { BaseOpcode = 0x51, BaseSize = 3, RequiresSpecialHandling = true, Description = "Store DA at address (16-bit)" } },
+            { "STDB", new InstructionInfo { BaseOpcode = 0x52, BaseSize = 3, RequiresSpecialHandling = true, Description = "Store DB at address (16-bit)" } },
+            { "STB", new InstructionInfo { BaseOpcode = 0x53, BaseSize = 3, RequiresSpecialHandling = true, Description = "Store B at address" } },
+            { "STC", new InstructionInfo { BaseOpcode = 0x54, BaseSize = 3, RequiresSpecialHandling = true, Description = "Store C at address" } },
+            { "STD", new InstructionInfo { BaseOpcode = 0x55, BaseSize = 3, RequiresSpecialHandling = true, Description = "Store D at address" } },
+            { "STE", new InstructionInfo { BaseOpcode = 0x56, BaseSize = 3, RequiresSpecialHandling = true, Description = "Store E at address" } },
+            { "STF", new InstructionInfo { BaseOpcode = 0x57, BaseSize = 3, RequiresSpecialHandling = true, Description = "Store F at address" } },
+
+            // Subroutine instructions (0x60-0x61) - CONFIRMED in CPU8Bit.cs
+            { "CALL", new InstructionInfo { BaseOpcode = 0x60, BaseSize = 3, Description = "Call subroutine" } },
+            { "RET", new InstructionInfo { BaseOpcode = 0x61, BaseSize = 1, Description = "Return from subroutine" } },
+
+            // Stack instructions (0x70-0x7F) - CONFIRMED in CPU8Bit.cs
+            { "PUSH", new InstructionInfo { BaseOpcode = 0x70, BaseSize = 1, RequiresSpecialHandling = true, Description = "Push register onto stack" } },
+            { "POP", new InstructionInfo { BaseOpcode = 0x71, BaseSize = 1, RequiresSpecialHandling = true, Description = "Pop from stack to register" } },
+            { "PUSH16", new InstructionInfo { BaseOpcode = 0x72, BaseSize = 1, RequiresSpecialHandling = true, Description = "Push 16-bit register onto stack" } },
+            { "POP16", new InstructionInfo { BaseOpcode = 0x73, BaseSize = 1, RequiresSpecialHandling = true, Description = "Pop from stack to 16-bit register" } },
+
+            // I/O Port Instructions (0x80-0x83) - CONFIRMED in CPU8Bit.cs
+            { "OUT", new InstructionInfo { BaseOpcode = 0x80, BaseSize = 2, Description = "Output to port" } },
+            { "IN", new InstructionInfo { BaseOpcode = 0x81, BaseSize = 2, Description = "Input from port" } },
+
+            // Register transfer instructions (0xA0-0xB3) - CONFIRMED in CPU8Bit.cs
+            { "MOV", new InstructionInfo { BaseOpcode = 0xA0, BaseSize = 1, RequiresSpecialHandling = true, Description = "Move between registers" } },
+            { "SWP", new InstructionInfo { BaseOpcode = 0xA6, BaseSize = 1, RequiresSpecialHandling = true, Description = "Swap registers" } },
+
+            // Relative jump instructions (0xC0-0xC3) - CONFIRMED in CPU8Bit.cs
+            { "JR", new InstructionInfo { BaseOpcode = 0xC0, BaseSize = 2, RequiresSpecialHandling = true, Description = "Jump relative" } },
+            { "JRZ", new InstructionInfo { BaseOpcode = 0xC1, BaseSize = 2, RequiresSpecialHandling = true, Description = "Jump relative if Zero" } },
+            { "JRNZ", new InstructionInfo { BaseOpcode = 0xC2, BaseSize = 2, RequiresSpecialHandling = true, Description = "Jump relative if Not Zero" } },
+            { "JRC", new InstructionInfo { BaseOpcode = 0xC3, BaseSize = 2, RequiresSpecialHandling = true, Description = "Jump relative if Carry" } },
+
+            // Auto-increment/decrement indexed operations (0xC4-0xCB) - CONFIRMED in CPU8Bit.cs
+            { "LDAIDX+", new InstructionInfo { BaseOpcode = 0xC4, BaseSize = 1, Description = "Load A from (IDX), then increment IDX" } },
+            { "LDAIDY+", new InstructionInfo { BaseOpcode = 0xC5, BaseSize = 1, Description = "Load A from (IDY), then increment IDY" } },
+            { "STAIDX+", new InstructionInfo { BaseOpcode = 0xC6, BaseSize = 1, Description = "Store A at (IDX), then increment IDX" } },
+            { "STAIDY+", new InstructionInfo { BaseOpcode = 0xC7, BaseSize = 1, Description = "Store A at (IDY), then increment IDY" } },
+            { "LDAIDX-", new InstructionInfo { BaseOpcode = 0xC8, BaseSize = 1, Description = "Load A from (IDX), then decrement IDX" } },
+            { "LDAIDY-", new InstructionInfo { BaseOpcode = 0xC9, BaseSize = 1, Description = "Load A from (IDY), then decrement IDY" } },
+            { "STAIDX-", new InstructionInfo { BaseOpcode = 0xCA, BaseSize = 1, Description = "Store A at (IDX), then decrement IDX" } },
+            { "STAIDY-", new InstructionInfo { BaseOpcode = 0xCB, BaseSize = 1, Description = "Store A at (IDY), then decrement IDY" } },
+
+            // Index register increment/decrement (0xE0-0xE3) - CONFIRMED in CPU8Bit.cs
+            { "INCIDX", new InstructionInfo { BaseOpcode = 0xE0, BaseSize = 1, Description = "Increment IDX" } },
+            { "DECIDX", new InstructionInfo { BaseOpcode = 0xE1, BaseSize = 1, Description = "Decrement IDX" } },
+            { "INCIDY", new InstructionInfo { BaseOpcode = 0xE2, BaseSize = 1, Description = "Increment IDY" } },
+            { "DECIDY", new InstructionInfo { BaseOpcode = 0xE3, BaseSize = 1, Description = "Decrement IDY" } },
+
+            // Index register add immediate (0xE8, 0xEA) - CONFIRMED in CPU8Bit.cs
+            { "ADDIDX", new InstructionInfo { BaseOpcode = 0xE8, BaseSize = 3, RequiresSpecialHandling = true, Description = "Add 16-bit immediate to IDX" } },
+            { "ADDIDY", new InstructionInfo { BaseOpcode = 0xEA, BaseSize = 3, RequiresSpecialHandling = true, Description = "Add 16-bit immediate to IDY" } },
+
+            // System call (0xF0) - CONFIRMED in CPU8Bit.cs
+            { "SYS", new InstructionInfo { BaseOpcode = 0xF0, BaseSize = 1, Description = "System call" } },
+
+            // Index register transfer instructions (0xF5, 0xF6, 0xF9) - CONFIRMED in CPU8Bit.cs
+            { "MVIDXIDY", new InstructionInfo { BaseOpcode = 0xF5, BaseSize = 1, Description = "Move IDX to IDY" } },
+            { "MVIDYIDX", new InstructionInfo { BaseOpcode = 0xF6, BaseSize = 1, Description = "Move IDY to IDX" } },
+            { "SWPIDXIDY", new InstructionInfo { BaseOpcode = 0xF9, BaseSize = 1, Description = "Swap IDX and IDY" } },
+
+            // Debug instruction (0xFD) - CONFIRMED in CPU8Bit.cs
+            { "DEBUG", new InstructionInfo { BaseOpcode = 0xFD, BaseSize = 1, Description = "Debug instruction" } },
+
+            // Extended instruction sets (0xFE-0xFF) - CONFIRMED in CPU8Bit.cs
+            { "EXT1", new InstructionInfo { BaseOpcode = 0xFE, BaseSize = 1, Description = "Extended instruction set 1" } },
+            { "EXT2", new InstructionInfo { BaseOpcode = 0xFF, BaseSize = 1, Description = "Extended instruction set 2" } }
+        };
     }
 
     public byte[] AssembleFile(string filePath)
@@ -166,187 +205,6 @@ public class Assembler
         return machineCode.ToArray();
     }
 
-    private string PreprocessLine(string line)
-    {
-        int commentIndex = line.IndexOf(';');
-        if (commentIndex >= 0)
-            line = line.Substring(0, commentIndex);
-        return line.Trim();
-    }
-
-    private bool IsLabel(string line)
-    {
-        return line.EndsWith(':');
-    }
-
-    private ushort GetInstructionSize(string line)
-    {
-        var parts = SplitInstruction(line);
-        string mnemonic = parts[0].ToUpper();
-
-        if (mnemonic == "DB")
-        {
-            // Count the number of values in DB directive
-            if (parts.Length == 1) return 0;
-
-            // Parse the data part to count values
-            string datapart = string.Join(" ", parts.Skip(1));
-            var values = ParseDataValues(datapart);
-            return (ushort)values.Count;
-        }
-
-        // Handle instructions with special operand parsing
-        if (parts.Length == 2)
-        {
-            string operand = parts[1];
-            
-            // Check for indexed addressing modes
-            if (operand.StartsWith("(") && operand.EndsWith(")"))
-            {
-                string inner = operand.Substring(1, operand.Length - 2).Trim();
-                
-                // Indexed addressing with offset requires 2 bytes (opcode + offset)
-                if (inner.Contains('+') || inner.Contains('-'))
-                {
-                    return 2;
-                }
-                // Direct indexed addressing requires 1 byte (opcode only)
-                else
-                {
-                    return 1;
-                }
-            }
-        }
-
-        return mnemonic switch
-        {
-            // Basic instructions (1 byte)
-            "NOP" or "HALT" or "RET" or "SYS" or "ADD" or "SUB" or "ADD16" or "SUB16" => 1,
-
-            // 8-bit load instructions
-            "LDA" or "LDB" or "LDC" or "LDD" or "LDE" or "LDF" when parts.Length == 2 && parts[1].StartsWith('#') => 2,
-            "LDA" or "LDB" or "LDC" or "LDD" or "LDE" or "LDF" => 3,
-
-            // 16-bit load instructions
-            "LDDA" or "LDDB" when parts.Length == 2 && parts[1].StartsWith('#') => 3,
-            "LDDA" or "LDDB" => 3,
-
-            // Index register load instructions (16-bit immediate) - always 3 bytes - support both variants
-            "LDIDX" or "LDIDY" or "LDIX1" or "LDIX2" or "LDIY1" or "LDIY2" => 3,
-
-            // Increment/Decrement operations
-            "INC" or "DEC" or "INC16" or "DEC16" => 1,
-            
-            // Compare instructions - size depends on format
-            "CMP" when parts.Length == 2 && parts[1].Contains('#') && parts[1].Contains(',') => 
-                parts[1].ToUpper().Contains("DA") || parts[1].ToUpper().Contains("DB") ? (ushort)3 : (ushort)2,
-            "CMP" => 1,
-
-            // Index register arithmetic operations (1 byte) - support both variants
-            "INCIDX" or "DECIDX" or "INCIDY" or "DECIDY" or 
-            "INCIX1" or "DECIX1" or "INCIY1" or "DECIY1" or 
-            "INCIX2" or "DECIX2" or "INCIY2" or "DECIY2" => 1,
-
-            // Index register add immediate (3 bytes) - support both variants
-            "ADDIDX" or "ADDIDY" or "ADDIX1" or "ADDIX2" or "ADDIY1" or "ADDIY2" => 3,
-
-            // Auto-increment/decrement indexed operations (1 byte) - support both variants
-            "LDAIDX+" or "LDAIDY+" or "STAIDX+" or "STAIDY+" or
-            "LDAIDX-" or "LDAIDY-" or "STAIDX-" or "STAIDY-" or
-            "LDAIX1+" or "LDAIY1+" or "STAIX1+" or "STAIY1+" or
-            "LDAIX1-" or "LDAIY1-" or "STAIX1-" or "STAIY1-" => 1,
-
-            // Index register transfer and swap operations (1 byte) - support both variants
-            "MVIDXIDY" or "MVIDYIDX" or "SWPIDXIDY" or
-            "MVIX1IX2" or "MVIX2IX1" or "MVIY1IY2" or "MVIY2IY1" or 
-            "MVIX1IY1" or "MVIY1IX1" or "SWPIX1IX2" or "SWPIY1IY2" or "SWPIX1IY1" => 1,
-
-            // Logic operations
-            "AND" or "OR" or "XOR" or "NOT" or "SHL" or "SHR" => 1,
-
-            // Jump instructions
-            "JMP" or "JZ" or "JNZ" or "JC" or "JNC" or "JN" or "JNN" => 3,
-            "JR" or "JRZ" or "JRNZ" or "JRC" => 2,
-
-            // Store and call instructions
-            "STA" or "STB" or "STC" or "STD" or "STE" or "STF" or "STDA" or "STDB" or "CALL" => 3,
-
-            // Stack and other single-byte instructions
-            "PUSH" or "POP" or "PUSH16" or "POP16" or "MOV" or "SWP" => 1,
-
-            _ => throw new AssemblerException($"Unknown instruction: {mnemonic}")
-        };
-    }
-
-    private List<byte> ParseDataValues(string dataString)
-    {
-        var values = new List<byte>();
-        var tokens = SplitDataString(dataString);
-
-        foreach (var token in tokens)
-        {
-            if (!string.IsNullOrWhiteSpace(token))
-            {
-                var tokenValues = ParseValue(token.Trim());
-                values.AddRange(tokenValues);
-            }
-        }
-
-        return values;
-    }
-
-    private List<string> SplitDataString(string dataString)
-    {
-        var tokens = new List<string>();
-        var currentToken = new StringBuilder();
-        bool inSingleQuotes = false;
-        bool inDoubleQuotes = false;
-
-        for (int i = 0; i < dataString.Length; i++)
-        {
-            char c = dataString[i];
-
-            if (c == '\'' && !inDoubleQuotes)
-            {
-                inSingleQuotes = !inSingleQuotes;
-                currentToken.Append(c);
-            }
-            else if (c == '"' && !inSingleQuotes)
-            {
-                inDoubleQuotes = !inDoubleQuotes;
-                currentToken.Append(c);
-            }
-            else if (c == ',' && !inSingleQuotes && !inDoubleQuotes)
-            {
-                // Add current token if it has content
-                string tokenStr = currentToken.ToString().Trim();
-                if (!string.IsNullOrEmpty(tokenStr))
-                {
-                    tokens.Add(tokenStr);
-                }
-                currentToken.Clear();
-            }
-            else if (!char.IsWhiteSpace(c) || inSingleQuotes || inDoubleQuotes)
-            {
-                currentToken.Append(c);
-            }
-            else if (char.IsWhiteSpace(c) && currentToken.Length > 0 && !inSingleQuotes && !inDoubleQuotes)
-            {
-                // Keep building the token, just ignore the whitespace
-                // (we'll trim it later)
-            }
-        }
-
-        // Add the last token if it has content
-        string finalToken = currentToken.ToString().Trim();
-        if (!string.IsNullOrEmpty(finalToken))
-        {
-            tokens.Add(finalToken);
-        }
-
-        return tokens;
-    }
-
     private List<byte> AssembleInstruction(string line, ushort currentAddress)
     {
         var parts = SplitInstruction(line);
@@ -386,22 +244,18 @@ public class Assembler
 
             case "LDDA":
             case "LDDB":
-                return AssembleLdda_LddbInstruction(mnemonic, parts, currentAddress);
+                return AssembleLoadInstruction16(mnemonic, parts, currentAddress);
+
+            case "STDA":
+            case "STDB":
+                return AssembleStoreInstruction(mnemonic, parts, currentAddress);
 
             case "LDIDX":
             case "LDIDY":
-            case "LDIX1":
-            case "LDIX2": 
-            case "LDIY1":
-            case "LDIY2":
                 return AssembleIndexLoadInstruction(mnemonic, parts, currentAddress);
 
             case "ADDIDX":
             case "ADDIDY":
-            case "ADDIX1":
-            case "ADDIX2":
-            case "ADDIY1":
-            case "ADDIY2":
                 return AssembleIndexAddInstruction(mnemonic, parts, currentAddress);
 
             case "INC":
@@ -443,10 +297,10 @@ public class Assembler
         }
 
         // Standard instruction handling
-        if (!_mnemonics.TryGetValue(mnemonic, out byte opcode))
+        if (!_instructions.TryGetValue(mnemonic, out InstructionInfo instructionInfo))
             throw new AssemblerException($"Unknown instruction: {mnemonic}");
 
-        bytes.Add(opcode);
+        bytes.Add(instructionInfo.BaseOpcode);
 
         // Handle standard instructions with operands
         switch (mnemonic)
@@ -461,42 +315,25 @@ public class Assembler
             case "SUB16":
             case "NOT":
             case "SHR":
+            case "DEBUG":
+            case "EXT1":
+            case "EXT2":
             // Index register operations that don't take parameters
             case "INCIDX":
             case "DECIDX":
             case "INCIDY":
             case "DECIDY":
-            case "INCIX1":
-            case "DECIX1":
-            case "INCIY1":
-            case "DECIY1":
-            case "INCIX2":
-            case "DECIX2":
-            case "INCIY2":
-            case "DECIY2":
-            case "LDAIDX+":
-            case "LDAIDY+":
-            case "STAIDX+":
-            case "STAIDY+":
-            case "LDAIDX-":
-            case "LDAIDY-":
-            case "STAIDX-":
-            case "STAIDY-":
-            case "LDAIX1+":
-            case "LDAIY1+":
-            case "STAIX1+":
-            case "STAIY1+":
-            case "LDAIX1-":
-            case "LDAIY1-":
-            case "STAIX1-":
-            case "STAIY1-":
+            case "LDAIDX+" :
+            case "LDAIDY+" :
+            case "STAIDX+" :
+            case "STAIDY+" :
+            case "LDAIDX-" :
+            case "LDAIDY-" :
+            case "STAIDX-" :
+            case "STAIDY-" :
             case "MVIDXIDY":
             case "MVIDYIDX":
             case "SWPIDXIDY":
-            case "MVIX1IX2":
-            case "MVIX2IX1":
-            case "MVIY1IY2":
-            case "MVIY2IY1":
                 if (parts.Length > 1)
                     throw new AssemblerException($"Instruction {mnemonic} takes no parameters");
                 break;
@@ -533,8 +370,10 @@ public class Assembler
         if (operand.StartsWith('#'))
         {
             // Immediate load
-            byte opcode = _mnemonics[mnemonic];
-            bytes.Add(opcode);
+            if (!_instructions.TryGetValue(mnemonic, out InstructionInfo instructionInfo))
+                throw new AssemblerException($"Unknown load instruction: {mnemonic}");
+            
+            bytes.Add(instructionInfo.BaseOpcode);
             byte value = ParseSingleValue(operand.Substring(1));
             bytes.Add(value);
         }
@@ -583,10 +422,10 @@ public class Assembler
         else
         {
             // Memory store - use standard instruction handling
-            if (!_mnemonics.TryGetValue(mnemonic, out byte opcode))
+            if (!_instructions.TryGetValue(mnemonic, out InstructionInfo instructionInfo))
                 throw new AssemblerException($"Unknown store instruction: {mnemonic}");
 
-            bytes.Add(opcode);
+            bytes.Add(instructionInfo.BaseOpcode);
             ushort address = ParseAddress(operand, currentAddress);
             bytes.Add((byte)(address & 0xFF));
             bytes.Add((byte)((address >> 8) & 0xFF));
@@ -751,7 +590,7 @@ public class Assembler
         return (register, offset);
     }
 
-    private List<byte> AssembleLdda_LddbInstruction(string mnemonic, string[] parts, ushort currentAddress)
+    private List<byte> AssembleLoadInstruction16(string mnemonic, string[] parts, ushort currentAddress)
     {
         var bytes = new List<byte>();
 
@@ -763,11 +602,30 @@ public class Assembler
         if (operand.StartsWith('#'))
         {
             // 16-bit immediate load
-            byte opcode = _mnemonics[mnemonic];
-            bytes.Add(opcode);
-            ushort value = ParseValue16(operand.Substring(1));
-            bytes.Add((byte)(value & 0xFF));
-            bytes.Add((byte)((value >> 8) & 0xFF));
+            if (!_instructions.TryGetValue(mnemonic, out InstructionInfo instructionInfo))
+                throw new AssemblerException($"Unknown 16-bit load instruction: {mnemonic}");
+            
+            bytes.Add(instructionInfo.BaseOpcode);
+            
+            string valueStr = operand.Substring(1); // Remove '#'
+            
+            // Check if it's a numeric value or a label
+            if (valueStr.StartsWith("0x", StringComparison.OrdinalIgnoreCase) ||
+                valueStr.StartsWith("$") ||
+                (char.IsDigit(valueStr[0]) || (valueStr.StartsWith("-") && char.IsDigit(valueStr[1]))))
+            {
+                // Numeric immediate value
+                ushort value = ParseValue16(valueStr);
+                bytes.Add((byte)(value & 0xFF));
+                bytes.Add((byte)((value >> 8) & 0xFF));
+            }
+            else
+            {
+                // Label immediate value - use the same mechanism as ParseAddress
+                _unresolvedReferences.Add((currentAddress + 1, valueStr));
+                bytes.Add(0x00); // Placeholder low byte
+                bytes.Add(0x00); // Placeholder high byte
+            }
         }
         else
         {
@@ -799,19 +657,39 @@ public class Assembler
 
         if (operand.StartsWith('#'))
         {
-            // 16-bit immediate load (like LDIDX #0x1234)
-            byte opcode = _mnemonics[mnemonic];
-            bytes.Add(opcode);
+            // 16-bit immediate load (like LDIDX #0x1234 or LDIDX #SOURCE_ARRAY)
+            if (!_instructions.TryGetValue(mnemonic, out InstructionInfo instructionInfo))
+                throw new AssemblerException($"Unknown index load instruction: {mnemonic}");
 
-            ushort value = ParseValue16(operand.Substring(1));
-            bytes.Add((byte)(value & 0xFF));        // Low byte first (little-endian)
-            bytes.Add((byte)((value >> 8) & 0xFF)); // High byte second
+            bytes.Add(instructionInfo.BaseOpcode);
+
+            string valueStr = operand.Substring(1); // Remove '#'
+            
+            // Check if it's a numeric value or a label
+            if (valueStr.StartsWith("0x", StringComparison.OrdinalIgnoreCase) ||
+                valueStr.StartsWith("$") ||
+                (char.IsDigit(valueStr[0]) || (valueStr.StartsWith("-") && char.IsDigit(valueStr[1]))))
+            {
+                // Numeric immediate value
+                ushort value = ParseValue16(valueStr);
+                bytes.Add((byte)(value & 0xFF));        // Low byte first (little-endian)
+                bytes.Add((byte)((value >> 8) & 0xFF)); // High byte second
+            }
+            else
+            {
+                // Label immediate value - use the same mechanism as ParseAddress
+                _unresolvedReferences.Add((currentAddress + 1, valueStr));
+                bytes.Add(0x00); // Placeholder low byte
+                bytes.Add(0x00); // Placeholder high byte
+            }
         }
         else
         {
             // Address/label load (like LDIDX WelcomeMessage) - same as LDDA/LDDB behavior
-            byte opcode = _mnemonics[mnemonic];
-            bytes.Add(opcode);
+            if (!_instructions.TryGetValue(mnemonic, out InstructionInfo instructionInfo))
+                throw new AssemblerException($"Unknown index load instruction: {mnemonic}");
+
+            bytes.Add(instructionInfo.BaseOpcode);
 
             ushort address = ParseAddress(operand, currentAddress);
             bytes.Add((byte)(address & 0xFF));      // Low byte first (little-endian)
@@ -834,11 +712,30 @@ public class Assembler
             throw new AssemblerException($"Index add instruction {mnemonic} requires immediate value (format: {mnemonic} #value)");
 
         // Index register add with 16-bit immediate value
-        byte opcode = _mnemonics[mnemonic];
-        bytes.Add(opcode);
-        ushort value = ParseValue16(operand.Substring(1));
-        bytes.Add((byte)(value & 0xFF));        // Low byte first (little-endian)
-        bytes.Add((byte)((value >> 8) & 0xFF)); // High byte second
+        if (!_instructions.TryGetValue(mnemonic, out InstructionInfo instructionInfo))
+            throw new AssemblerException($"Unknown index add instruction: {mnemonic}");
+
+        bytes.Add(instructionInfo.BaseOpcode);
+        
+        string valueStr = operand.Substring(1); // Remove '#'
+        
+        // Check if it's a numeric value or a label
+        if (valueStr.StartsWith("0x", StringComparison.OrdinalIgnoreCase) ||
+            valueStr.StartsWith("$") ||
+            (char.IsDigit(valueStr[0]) || (valueStr.StartsWith("-") && char.IsDigit(valueStr[1]))))
+        {
+            // Numeric immediate value
+            ushort value = ParseValue16(valueStr);
+            bytes.Add((byte)(value & 0xFF));        // Low byte first (little-endian)
+            bytes.Add((byte)((value >> 8) & 0xFF)); // High byte second
+        }
+        else
+        {
+            // Label immediate value - use the same mechanism as ParseAddress
+            _unresolvedReferences.Add((currentAddress + 1, valueStr));
+            bytes.Add(0x00); // Placeholder low byte
+            bytes.Add(0x00); // Placeholder high byte
+        }
 
         return bytes;
     }
@@ -932,14 +829,28 @@ public class Assembler
             string valueStr = immediateStr.Substring(1); // Remove '#'
             if (register == "DA" || register == "DB")
             {
-                // 16-bit immediate value
-                ushort value = ParseValue16(valueStr);
-                bytes.Add((byte)(value & 0xFF));        // Low byte first (little-endian)
-                bytes.Add((byte)((value >> 8) & 0xFF)); // High byte second
+                // 16-bit immediate value - check if it's numeric or a label
+                if (valueStr.StartsWith("0x", StringComparison.OrdinalIgnoreCase) ||
+                    valueStr.StartsWith("$") ||
+                    (char.IsDigit(valueStr[0]) || (valueStr.StartsWith("-") && char.IsDigit(valueStr[1]))))
+                {
+                    // Numeric immediate value
+                    ushort value = ParseValue16(valueStr);
+                    bytes.Add((byte)(value & 0xFF));        // Low byte first (little-endian)
+                    bytes.Add((byte)((value >> 8) & 0xFF)); // High byte second
+                }
+                else
+                {
+                    // Label immediate value - not typically used but theoretically possible
+                    // Note: We need to calculate currentAddress for this instruction
+                    // This is complex because we're deep in the assembly process
+                    // For now, we'll throw an error as labels in CMP immediate are unusual
+                    throw new AssemblerException($"Labels are not supported in CMP immediate values. Use numeric values only: {valueStr}");
+                }
             }
             else
             {
-                // 8-bit immediate value
+                // 8-bit immediate value - labels not practical for 8-bit values
                 byte value = ParseSingleValue(valueStr);
                 bytes.Add(value);
             }
@@ -1025,7 +936,7 @@ public class Assembler
         if (parts.Length != 2)
             throw new AssemblerException($"{mnemonic} instruction requires an offset");
 
-        byte opcode = _mnemonics[mnemonic];
+        byte opcode = _instructions[mnemonic].BaseOpcode;
         bytes.Add(opcode);
 
         sbyte offset = ParseRelativeOffset(parts[1], currentAddress);
@@ -1277,20 +1188,27 @@ public class Assembler
             }
         }
 
-        // Handle decimal values
-        try
+        // Check if it's a decimal number - IMPORTANT: check this before label detection
+        if (char.IsDigit(value[0]) || (value.StartsWith("-") && char.IsDigit(value[1])))
         {
-            values.Add(Convert.ToByte(value));
-            return values;
+            try
+            {
+                values.Add(Convert.ToByte(value));
+                return values;
+            }
+            catch (OverflowException)
+            {
+                throw new OverflowException("Value was either too large or too small for an unsigned byte.");
+            }
+            catch (FormatException)
+            {
+                throw new AssemblerException($"Invalid numeric format: {value}");
+            }
         }
-        catch (OverflowException)
-        {
-            throw new OverflowException("Value was either too large or too small for an unsigned byte.");
-        }
-        catch (FormatException)
-        {
-            throw new AssemblerException($"Invalid numeric format: {value}");
-        }
+
+        // If it's not a numeric value, it could be a label - but this is unusual for 8-bit values
+        // For DB directive, this is typically an error, but we should provide a helpful message
+        throw new AssemblerException($"Invalid value format: {value}. Labels are not supported in 8-bit value context. Use numeric values (0-255), hex (0xFF or $FF), or character literals ('A').");
     }
 
     private ushort ParseValue16(string value)
@@ -1329,18 +1247,28 @@ public class Assembler
             }
         }
 
-        try
+        // Check if it's a decimal number - IMPORTANT: check this before label detection
+        if (char.IsDigit(value[0]) || (value.StartsWith("-") && char.IsDigit(value[1])))
         {
             return Convert.ToUInt16(value);
         }
-        catch (OverflowException)
+
+        // If it's not a numeric value, it must be a label
+        // Check if it looks like a valid label (not starting with special characters)
+        if (!value.StartsWith("+") && !value.StartsWith("-"))
         {
-            throw new OverflowException("Value was either too large or too small for a UInt16.");
+            // Try to resolve the label
+            if (_labels.TryGetValue(value, out ushort address))
+            {
+                return address;
+            }
+            else
+            {
+                throw new AssemblerException($"Undefined label: {value}");
+            }
         }
-        catch (FormatException)
-        {
-            throw new AssemblerException($"Invalid numeric format: {value}");
-        }
+
+        throw new AssemblerException($"Invalid numeric format: {value}");
     }
 
     private ushort ParseAddress(string address, ushort currentAddress)
@@ -1534,5 +1462,188 @@ public class Assembler
         {
             throw new AssemblerException($"Invalid numeric format: {value}");
         }
+    }
+
+    private ushort GetInstructionSize(string line)
+    {
+        var parts = SplitInstruction(line);
+        string mnemonic = parts[0].ToUpper();
+
+        // Handle DB directive specially
+        if (mnemonic == "DB")
+        {
+            // Count the number of values in DB directive
+            if (parts.Length == 1) return 0;
+
+            // Parse the data part to count values
+            string datapart = string.Join(" ", parts.Skip(1));
+            var values = ParseDataValues(datapart);
+            return (ushort)values.Count;
+        }
+
+        // Look up instruction in our centralized dictionary
+        if (!_instructions.TryGetValue(mnemonic, out InstructionInfo instructionInfo))
+        {
+            throw new AssemblerException($"Unknown instruction: {mnemonic}");
+        }
+
+        // Handle instructions with variable size based on operands
+        if (instructionInfo.HasVariableSize)
+        {
+            return GetVariableInstructionSize(mnemonic, parts, instructionInfo);
+        }
+
+        // Handle instructions with special operand parsing (indexed addressing)
+        if (parts.Length == 2)
+        {
+            string operand = parts[1];
+            
+            // Check for indexed addressing modes
+            if (operand.StartsWith("(") && operand.EndsWith(")"))
+            {
+                string inner = operand.Substring(1, operand.Length - 2).Trim();
+                
+                // Indexed addressing with offset requires 2 bytes (opcode + offset)
+                if (inner.Contains('+') || inner.Contains('-'))
+                {
+                    return 2;
+                }
+                // Direct indexed addressing requires 1 byte (opcode only)
+                else
+                {
+                    return 1;
+                }
+            }
+        }
+
+        // Return the base size for instructions without variable sizing
+        return instructionInfo.BaseSize;
+    }
+
+    /// <summary>
+    /// Get the size of instructions that have variable size based on their operands
+    /// </summary>
+    private ushort GetVariableInstructionSize(string mnemonic, string[] parts, InstructionInfo instructionInfo)
+    {
+        switch (mnemonic)
+        {
+            // 8-bit load instructions - size depends on addressing mode
+            case "LDA":
+            case "LDB":
+            case "LDC":
+            case "LDD":
+            case "LDE":
+            case "LDF":
+                if (parts.Length == 2 && parts[1].StartsWith('#'))
+                    return 2; // Immediate: opcode + value
+                else
+                    return 3; // Memory: opcode + address (16-bit)
+
+            // 16-bit load instructions - size depends on addressing mode
+            case "LDDA":
+            case "LDDB":
+                if (parts.Length == 2 && parts[1].StartsWith('#'))
+                    return 3; // Immediate: opcode + value (16-bit)
+                else
+                    return 3; // Memory: opcode + address (16-bit)
+
+            // Compare instructions - size depends on format
+            case "CMP":
+                if (parts.Length == 2 && parts[1].Contains('#') && parts[1].Contains(','))
+                {
+                    // CMP register,#immediate format
+                    return parts[1].ToUpper().Contains("DA") || parts[1].ToUpper().Contains("DB") ? (ushort)3 : (ushort)2;
+                }
+                else
+                {
+                    return 1; // Register-to-register comparison
+                }
+
+            default:
+                // For other variable-size instructions, return base size
+                return instructionInfo.BaseSize;
+        }
+    }
+
+    private string PreprocessLine(string line)
+    {
+        int commentIndex = line.IndexOf(';');
+        if (commentIndex >= 0)
+            line = line.Substring(0, commentIndex);
+        return line.Trim();
+    }
+
+    private bool IsLabel(string line)
+    {
+        return line.EndsWith(':');
+    }
+
+    private List<byte> ParseDataValues(string dataString)
+    {
+        var values = new List<byte>();
+        var tokens = SplitDataString(dataString);
+
+        foreach (var token in tokens)
+        {
+            if (!string.IsNullOrWhiteSpace(token))
+            {
+                var tokenValues = ParseValue(token.Trim());
+                values.AddRange(tokenValues);
+            }
+        }
+
+        return values;
+    }
+
+    private List<string> SplitDataString(string dataString)
+    {
+        var tokens = new List<string>();
+        var currentToken = new StringBuilder();
+        bool inSingleQuotes = false;
+        bool inDoubleQuotes = false;
+
+        for (int i = 0; i < dataString.Length; i++)
+        {
+            char c = dataString[i];
+
+            if (c == '\'' && !inDoubleQuotes)
+            {
+                inSingleQuotes = !inSingleQuotes;
+                currentToken.Append(c);
+            }
+            else if (c == '"' && !inSingleQuotes)
+            {
+                inDoubleQuotes = !inDoubleQuotes;
+                currentToken.Append(c);
+            }
+            else if (c == ',' && !inSingleQuotes && !inDoubleQuotes)
+            {
+                // Add current token if it has content
+                string tokenStr = currentToken.ToString().Trim();
+                if (!string.IsNullOrEmpty(tokenStr))
+                {
+                    tokens.Add(tokenStr);
+                }
+                currentToken.Clear();
+            }
+            else if (!char.IsWhiteSpace(c) || inSingleQuotes || inDoubleQuotes)
+            {
+                currentToken.Append(c);
+            }
+            else if (char.IsWhiteSpace(c) && currentToken.Length > 0 && !inSingleQuotes && !inDoubleQuotes)
+            {
+                // Keep building the token, just ignore the whitespace
+                // (we'll trim it later)
+            }
+        }
+
+        // Add the last token if it has content
+        string finalToken = currentToken.ToString().Trim();
+        if (!string.IsNullOrEmpty(finalToken))
+        {
+            tokens.Add(finalToken);
+        }
+
+        return tokens;
     }
 }

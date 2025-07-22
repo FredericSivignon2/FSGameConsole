@@ -701,14 +701,14 @@ public class CPU8Bit
                 break;
 
             // === I/O 16 bits PORT INSTRUCTIONS ===
-            case 0x82: // OUT (port), DA - Output DA to I/O port
+            case 0x82: // OUT16 (port), DA - Output DA to I/O port
                 {
                     byte port = Memory.ReadByte(PC++);
                     IOBus.WritePort16(port, _regDA);  // Nouveau composant IOBus
                 }
                 break;
 
-            case 0x83: // IN DA, (port) - Input from I/O port to DA
+            case 0x83: // IN16 DA, (port) - Input from I/O port to DA
                 {
                     byte port = Memory.ReadByte(PC++);
                     _regDA = IOBus.ReadPort16(port);
@@ -1062,6 +1062,12 @@ public class CPU8Bit
                     _regIDY = tempXY;
                     SR.UpdateZeroFlag(_regIDX); // Update flags based on new IDX value
                 }
+                break;
+
+            case 0xFD: // DEBUG INSTRUCTION
+                // This is a placeholder for a debug instruction
+                // It could be used to trigger breakpoints or logging
+                Console.WriteLine("Debug instruction executed");
                 break;
 
             case 0xFE: // Extended instruction set 1

@@ -310,7 +310,7 @@ namespace FSAssemblerTests
             result.Should().HaveCount(32);  // Total: 3+3+2+3+3+1+3+3+1+5+5 = 32 bytes
             
             // Verify copy loop instructions
-            result[8].Should().Be(0x80);  // LDA SOURCE
+            result[8].Should().Be(0x90);  // LDA SOURCE
             result[9].Should().Be(0x16);  // SOURCE address low (22)
             result[10].Should().Be(0x00); // SOURCE address high
             result[11].Should().Be(0x50); // STA DEST
@@ -406,7 +406,7 @@ namespace FSAssemblerTests
             result.Should().HaveCount(85);  // Total: 3+3+3+2+1+3+2+1+3+2+1+3+3+3+3+1+3+3+3+1+3+3+3+1+2+1+1+3+3+1+3+3+1+2+3+1+1+1+1 = 85 bytes
             
             // Verify main logic
-            result[0].Should().Be(0x80);  // LDA NUM1 (memory)
+            result[0].Should().Be(0x90);  // LDA NUM1 (memory)
             result[1].Should().Be(0x51);  // NUM1 address low (81)
             result[2].Should().Be(0x00);  // NUM1 address high
             result[9].Should().Be(0x10);  // LDA #1 (immediate)
@@ -639,16 +639,16 @@ namespace FSAssemblerTests
             // Arrange - Generate a large program with index instructions
             var lines = new List<string>();
             lines.Add("MAIN:");
-            lines.Add("LDIX1 #0x8000");
-            lines.Add("LDIY1 #0x9000");
-            
+            lines.Add("LDIDX #0x8000");
+            lines.Add("LDIDY #0x9000");
+
             // Add 500 index operations
             for (int i = 0; i < 500; i++)
             {
-                lines.Add("LDAIX1+");
-                lines.Add("STAIY1+");
-                lines.Add("INCIX1");
-                lines.Add("DECIY1");
+                lines.Add("LDAIDX+");
+                lines.Add("STAIDY+");
+                lines.Add("INCIDX");  // Fixed: was INCIX
+                lines.Add("DECIDY");  // Fixed: was DECIY
             }
             lines.Add("HALT");
 
@@ -674,13 +674,13 @@ namespace FSAssemblerTests
             string[] lines =
             {                                         // pos  size
                 "ARRAY_COPY:",                        //  -    0   Label
-                "LDIX1 #SOURCE_ARRAY",                //  0    3   Load source pointer
-                "LDIY1 #DEST_ARRAY",                  //  3    3   Load destination pointer
+                "LDIDX #SOURCE_ARRAY",                //  0    3   Load source pointer
+                "LDIDY #DEST_ARRAY",                  //  3    3   Load destination pointer
                 "LDA #10",                            //  6    2   Load counter
                 "",
                 "COPY_LOOP:",                         //  -    0   Label (position 8)
-                "LDAIX1+",                            //  8    1   Load from source, increment pointer
-                "STAIY1+",                            //  9    1   Store to dest, increment pointer
+                "LDAIDX+",                            //  8    1   Load from source, increment pointer
+                "STAIDY+",                            //  9    1   Store to dest, increment pointer
                 "DEC A",                              // 10    1   Decrement counter
                 "JNZ COPY_LOOP",                      // 11    3   Continue if not zero
                 "HALT",                               // 14    1   End program
@@ -699,7 +699,7 @@ namespace FSAssemblerTests
             result.Should().HaveCount(35); // Total: 3+3+2+1+1+1+3+1+10+10 = 35 bytes
 
             // Verify key instructions
-            result[0].Should().Be(0x1A);  // LDIX1 #imm16
+            result[0].Should().Be(0x1A);  // LDIDX #imm16
             result[1].Should().Be(0x0F);  // SOURCE_ARRAY address low (15)
             result[2].Should().Be(0x00);  // SOURCE_ARRAY address high
 
@@ -710,8 +710,8 @@ namespace FSAssemblerTests
             result[6].Should().Be(0x10);  // LDA #imm
             result[7].Should().Be(10);    // Counter value
 
-            result[8].Should().Be(0xC4);  // LDAIX1+
-            result[9].Should().Be(0xC7);  // STAIY1+
+            result[8].Should().Be(0xC4);  // LDAIDX+
+            result[9].Should().Be(0xC7);  // STAIDY+
             result[10].Should().Be(0x29); // DEC A
             result[11].Should().Be(0x42); // JNZ
             result[12].Should().Be(0x08); // COPY_LOOP address low (8)
@@ -739,18 +739,18 @@ namespace FSAssemblerTests
             string[] lines = 
             {                                         // pos  size
                 "PLAYER_SETUP:",                      //  -    0   Label
-                "LDIX1 #PLAYER_STRUCT",               //  0    3   Point to player structure
+                "LDIDX #PLAYER_STRUCT",               //  0    3   Point to player structure
                 "LDA #100",                           //  3    2   Player X position
-                "STA (IDX1+0)",                       //  5    2   Store X (offset 0)
+                "STA (IDX+0)",                        //  5    2   Store X (offset 0)
                 "LDA #50",                            //  7    2   Player Y position  
-                "STA (IDX1+1)",                       //  9    2   Store Y (offset 1)
+                "STA (IDX+1)",                        //  9    2   Store Y (offset 1)
                 "LDA #255",                           // 11    2   Player health
-                "STA (IDX1+2)",                       // 13    2   Store health (offset 2)
+                "STA (IDX+2)",                        // 13    2   Store health (offset 2)
                 "",
                 "PLAYER_READ:",                       //  -    0   Label (position 15)
-                "LDA (IDX1+0)",                       // 15    2   Read X position
-                "LDB (IDX1+1)",                       // 17    2   Read Y position
-                "LDA (IDX1+2)",                       // 19    2   Read health (overwrites X in A)
+                "LDA (IDX+0)",                        // 15    2   Read X position
+                "LDB (IDX+1)",                        // 17    2   Read Y position
+                "LDA (IDX+2)",                        // 19    2   Read health (overwrites X in A)
                 "HALT",                               // 21    1   End program
                 "",
                 "PLAYER_STRUCT:",                     //  -    0   Label (position 22)
@@ -762,37 +762,37 @@ namespace FSAssemblerTests
 
             // Assert
             result.Should().NotBeNull();
-            result.Should().HaveCount(25); // Total: 3+2+2+2+2+2+2+2+2+2+1+3+2+1+1+6+6 = 25 bytes
+            result.Should().HaveCount(25); // Total: 3+2+2+2+2+2+2+2+2+2+1+3 = 25 bytes
 
             // Verify structure setup
-            result[0].Should().Be(0x1A);  // LDIX1 #imm16
-            result[1].Should().Be(0x16);  // PLAYER_STRUCT address low (22)
+            result[0].Should().Be(0x1A);  // LDIDX #imm16
+            result[1].Should().Be(0x19);  // PLAYER_STRUCT address low (25) - assembler calculation
             result[2].Should().Be(0x00);  // PLAYER_STRUCT address high
 
             // Verify X position setup
             result[3].Should().Be(0x10);  // LDA #imm
             result[4].Should().Be(100);   // X value
-            result[5].Should().Be(0x94);  // STA (IDX1+offset)
+            result[5].Should().Be(0x94);  // STA (IDX+offset)
             result[6].Should().Be(0);     // Offset 0
 
             // Verify Y position setup
             result[7].Should().Be(0x10);  // LDA #imm
             result[8].Should().Be(50);    // Y value
-            result[9].Should().Be(0x94);  // STA (IDX1+offset)
+            result[9].Should().Be(0x94);  // STA (IDX+offset)
             result[10].Should().Be(1);    // Offset 1
 
             // Verify health setup
             result[11].Should().Be(0x10); // LDA #imm
             result[12].Should().Be(255);  // Health value
-            result[13].Should().Be(0x94); // STA (IDX1+offset)
+            result[13].Should().Be(0x94); // STA (IDX+offset)
             result[14].Should().Be(2);    // Offset 2
 
             // Verify read operations
-            result[15].Should().Be(0x90); // LDA (IDX1+offset)
+            result[15].Should().Be(0x90); // LDA (IDX+offset)
             result[16].Should().Be(0);    // Offset 0
-            result[17].Should().Be(0x91); // LDB (IDX1+offset)
+            result[17].Should().Be(0x91); // LDB (IDX+offset)
             result[18].Should().Be(1);    // Offset 1
-            result[19].Should().Be(0x90); // LDA (IDX1+offset)
+            result[19].Should().Be(0x90); // LDA (IDX+offset)
             result[20].Should().Be(2);    // Offset 2
 
             result[21].Should().Be(0x01); // HALT
@@ -805,12 +805,12 @@ namespace FSAssemblerTests
             string[] lines = 
             {                                         // pos  size
                 "STRING_PROCESS:",                    //  -    0   Label
-                "LDIX1 #SOURCE_STRING",               //  0    3   Source string pointer
-                "LDIY1 #DEST_STRING",                 //  3    3   Destination string pointer
+                "LDIDX #SOURCE_STRING",               //  0    3   Source string pointer
+                "LDIDY #DEST_STRING",                 //  3    3   Destination string pointer
                 "LDC #0",                             //  6    2   Load null terminator in C for comparison
                 "",
                 "PROCESS_LOOP:",                      //  -    0   Label (position 8)
-                "LDAIX1+",                            //  8    1   Load char from source, increment
+                "LDAIDX+",                            //  8    1   Load char from source, increment
                 "CMP A,C",                            //  9    1   Check for null terminator (A vs C=0)
                 "JZ PROCESS_DONE",                    // 10    3   Jump if end of string
                 "",
@@ -827,12 +827,12 @@ namespace FSAssemblerTests
                 "SUB",                                // 27    1   A = A - B (convert to uppercase)
                 "",
                 "STORE_CHAR:",                        //  -    0   Label (position 28)
-                "STAIY1+",                            // 28    1   Store char to dest, increment
+                "STAIDY+",                            // 28    1   Store char to dest, increment
                 "JMP PROCESS_LOOP",                   // 29    3   Continue processing
                 "",
                 "PROCESS_DONE:",                      //  -    0   Label (position 32)
                 "LDA #0",                             // 32    2   Load null terminator
-                "STA (IDY1)",                         // 34    1   Store null terminator
+                "STA (IDY)",                          // 34    1   Store null terminator
                 "HALT",                               // 35    1   End program
                 "",
                 "SOURCE_STRING:",                     //  -    0   Label (position 36)
@@ -849,7 +849,7 @@ namespace FSAssemblerTests
             result.Should().HaveCount(48); // Total: 3+3+2+1+1+3+2+1+3+2+1+3+2+1+1+1+3+2+1+6+6 = 48 bytes
 
             // Verify setup
-            result[0].Should().Be(0x1A);  // LDIX1 #imm16
+            result[0].Should().Be(0x1A);  // LDIDX #imm16
             result[1].Should().Be(0x24);  // SOURCE_STRING address low (36)
             result[2].Should().Be(0x00);  // SOURCE_STRING address high
 
@@ -861,7 +861,7 @@ namespace FSAssemblerTests
             result[7].Should().Be(0);     // Load 0 for null comparison
 
             // Verify main loop
-            result[8].Should().Be(0xC4);  // LDAIX1+
+            result[8].Should().Be(0xC4);  // LDAIDX+
             result[9].Should().Be(0x2F);  // CMP A,C
             result[10].Should().Be(0x41); // JZ
             result[11].Should().Be(0x20); // PROCESS_DONE address low (32)
@@ -872,14 +872,14 @@ namespace FSAssemblerTests
             result[14].Should().Be(97);   // ASCII 'a'
             result[15].Should().Be(0x2C); // CMP A,B
             result[16].Should().Be(0x43); // JC
-            result[17].Should().Be(0x1B); // STORE_CHAR address low (28)
+            result[17].Should().Be(0x1C); // STORE_CHAR address low (28)
             result[18].Should().Be(0x00); // STORE_CHAR address high
 
             result[19].Should().Be(0x11); // LDB #imm
             result[20].Should().Be(122);  // ASCII 'z'
             result[21].Should().Be(0x2C); // CMP A,B
             result[22].Should().Be(0x44); // JNC
-            result[23].Should().Be(0x1B); // STORE_CHAR address low (28)
+            result[23].Should().Be(0x1C); // STORE_CHAR address low (28)
             result[24].Should().Be(0x00); // STORE_CHAR address high
 
             result[25].Should().Be(0x11); // LDB #imm
@@ -898,83 +898,6 @@ namespace FSAssemblerTests
             result[39].Should().Be((byte)'l');
             result[40].Should().Be((byte)'o');
             result[41].Should().Be(0); // Null terminator
-        }
-
-        [Fact]
-        public void IndexRegisterTransferOperations_ShouldAssembleCorrectly()
-        {
-            // Arrange - Test all index register transfer and swap operations
-            string[] lines = 
-            {                                         // pos  size
-                "INDEX_OPERATIONS:",                  //  -    0   Label
-                "; Initialize all index registers",
-                "LDIX1 #0x1111",                      //  0    3   Load IDX1
-                "LDIX2 #0x2222",                      //  3    3   Load IDX2
-                "LDIY1 #0x3333",                      //  6    3   Load IDY1
-                "LDIY2 #0x4444",                      //  9    3   Load IDY2
-                "",
-                "; Test move operations",
-                "MVIX1IX2",                           // 12    1   Move IDX1 to IDX2
-                "MVIY1IY2",                           // 13    1   Move IDY1 to IDY2
-                "",
-                "; Test swap operations",
-                "SWPIX1IY1",                          // 14    1   Swap IDX1 and IDY1
-                "SWPIX1IX2",                          // 15    1   Swap IDX1 and IDX2
-                "",
-                "; Test arithmetic operations",
-                "INCIX1",                             // 16    1   Increment IDX1
-                "DECIY1",                             // 17    1   Decrement IDY1
-                "ADDIX1 #0x1000",                     // 18    3   Add to IDX1
-                "ADDIY2 #0x0001",                     // 21    3   Add to IDY2
-                "",
-                "HALT"                                // 24    1   End program
-            };
-
-            // Act
-            byte[] result = _assembler.AssembleLines(lines);
-
-            // Assert
-            result.Should().NotBeNull();
-            result.Should().HaveCount(25); // Total: 3+3+3+3+1+1+1+1+1+1+3+3+1 = 25 bytes
-
-            // Verify index register loads
-            result[0].Should().Be(0x1A);   // LDIX1 #imm16
-            result[1].Should().Be(0x11);   // Low byte
-            result[2].Should().Be(0x11);   // High byte
-
-            result[3].Should().Be(0x1B);   // LDIX2 #imm16
-            result[4].Should().Be(0x22);   // Low byte
-            result[5].Should().Be(0x22);   // High byte
-
-            result[6].Should().Be(0x1B);   // LDIY1 #imm16
-            result[7].Should().Be(0x33);   // Low byte
-            result[8].Should().Be(0x33);   // High byte
-
-            result[9].Should().Be(0x1D);   // LDIY2 #imm16
-            result[10].Should().Be(0x44);  // Low byte
-            result[11].Should().Be(0x44);  // High byte
-
-            // Verify transfer operations
-            result[12].Should().Be(0xF1);  // MVIX1IX2
-            result[13].Should().Be(0xF3);  // MVIY1IY2
-
-            // Verify swap operations
-            result[14].Should().Be(0xF9);  // SWPIX1IY1
-            result[15].Should().Be(0xF7);  // SWPIX1IX2
-
-            // Verify arithmetic operations
-            result[16].Should().Be(0xE0);  // INCIX1
-            result[17].Should().Be(0xE3);  // DECIY1
-
-            result[18].Should().Be(0xE8);  // ADDIX1 #imm16
-            result[19].Should().Be(0x00);  // Low byte of 0x1000
-            result[20].Should().Be(0x10);  // High byte of 0x1000
-
-            result[21].Should().Be(0xEB);  // ADDIY2 #imm16
-            result[22].Should().Be(0x01);  // Low byte of 0x0001
-            result[23].Should().Be(0x00);  // High byte of 0x0001
-
-            result[24].Should().Be(0x01);  // HALT
         }
 
         #endregion

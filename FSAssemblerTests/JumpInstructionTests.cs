@@ -422,7 +422,7 @@ namespace FSAssemblerTests
             // Act & Assert
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
-                  .WithMessage("*Label non défini*");
+                  .WithMessage("*Undefined label: UNDEFINED_LABEL*");
         }
 
         [Fact]
@@ -453,7 +453,7 @@ namespace FSAssemblerTests
             // Act & Assert
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
-                  .WithMessage("*déjà défini*");
+                  .WithMessage("*Label 'LABEL' already defined*");
         }
 
         #endregion

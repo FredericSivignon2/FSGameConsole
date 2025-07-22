@@ -32,7 +32,7 @@ BIEN UTILISER CE QUI EST DECRIT DANS LES PRELIMINAIRES !!!
 Le projet FSGameConsole est un émulateur de console de jeux vintage, s'inspirant du style Amstrad CPC. Il se compose de **6 projets principaux** :
 
 - **FSGameConsole** : Application WinForm principale (.NET 9)
-- **FSCPU** (CPU8Bit) : Cœur de l'émulateur - processeur 8 bits, mémoire, périphériques
+- **FSCPU** (CPU8Bit) : Cœur de l'émulateur - processeur 8 bits, mémoire, périphériques. CPU8Bit.cs doit toujours être la "golden source" des opcodes supportés par l'émulateur. Donc, si tu vois dans d'autres fichiers, des opcodes qui ne sont pas dans CPU8Bit.cs, demande moi avant de faire une modification. Dans la plupart des cas, il faudra supprimer les anciennes références. Et inversement, si il y a des opcodes dans CPU8Bit.cs qui ne sont pas ailleurs où ils devraient être, il faut les rajouter (fichier Assembler.cs, test unitaires, test d'intégration etc.)
 - **FSAssembler** : Assembleur pour compiler du code .fs8 en binaire exécutable
 - **FSCPUTests** : Suite de tests unitaires complète (120+ tests)
 - **FSAssemblerTests** : Suite de tests assembleur complète (280+ tests)
@@ -364,6 +364,7 @@ L'assembleur compile les fichiers **.fs8** en binaires exécutables :
 - **Instructions CMP immediate** : Support complet des nouvelles comparaisons
 
 ### Usage :
+
 ```
 FSAssembler input.fs8 output.bin
 ```

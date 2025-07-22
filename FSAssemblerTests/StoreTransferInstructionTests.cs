@@ -457,7 +457,7 @@ namespace FSAssemblerTests
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
                   .WithInnerException<AssemblerException>()
-                  .WithMessage("*only A,B and A,C supported*");
+                  .WithMessage("*Invalid SWP registers: B,C*");
         }
 
         [Fact]
@@ -469,7 +469,7 @@ namespace FSAssemblerTests
             // Act & Assert
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
-                  .WithMessage("*Label non défini*");
+                  .WithMessage("*Undefined label: UNDEFINED_LABEL*");
         }
 
         #endregion

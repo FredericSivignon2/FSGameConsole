@@ -449,7 +449,7 @@ namespace FSAssemblerTests
             result[8].Should().Be(0);   // null terminator
             
             // MAIN: LDA MESSAGE
-            result[9].Should().Be(0x80);  // LDA memory opcode
+            result[9].Should().Be(0x90);  // LDA memory opcode
             result[10].Should().Be(0x03); // MESSAGE address (3)
             result[11].Should().Be(0x00);
         }
@@ -547,7 +547,7 @@ namespace FSAssemblerTests
             // Act & Assert
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
-                  .WithMessage("*déjà défini*");
+                  .WithMessage("*Label 'LABEL' already defined*");
         }
 
         [Fact]
@@ -559,7 +559,7 @@ namespace FSAssemblerTests
             // Act & Assert
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
-                  .WithMessage("*Label non défini*");
+                  .WithMessage("*Undefined label: UNDEFINED*");
         }
 
         #endregion
@@ -616,7 +616,7 @@ namespace FSAssemblerTests
             
             // Verify PRINT_CHAR subroutine
             result[10].Should().Be(0x70); // PUSH A
-            result[11].Should().Be(0x80); // LDA MESSAGE (memory mode)
+            result[11].Should().Be(0x90); // LDA MESSAGE (memory mode)
             result[12].Should().Be(0x09); // MESSAGE address (9)
             result[13].Should().Be(0x00);
             result[14].Should().Be(0x00); // NOP

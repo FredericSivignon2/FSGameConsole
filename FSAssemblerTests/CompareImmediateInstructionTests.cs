@@ -280,7 +280,7 @@ namespace FSAssemblerTests
                 .Should().Throw<AssemblerException>()
                 .WithMessage("Line 1")
                 .WithInnerException<AssemblerException>()
-                .WithMessage("*CMP immediate value must be prefixed with '#'*");
+                .WithMessage("*Invalid CMP registers: A,42 (only A,B and A,C supported)*");
         }
 
         [Fact]
@@ -319,7 +319,8 @@ namespace FSAssemblerTests
 
             // Act & Assert
             _assembler.Invoking(a => a.AssembleLines(lines))
-                .Should().Throw<OverflowException>()
+                .Should().Throw<AssemblerException>()
+                .WithInnerException<OverflowException>()
                 .WithMessage("Value was either too large or too small for an unsigned byte.");
         }
 
@@ -331,7 +332,8 @@ namespace FSAssemblerTests
 
             // Act & Assert
             _assembler.Invoking(a => a.AssembleLines(lines))
-                .Should().Throw<OverflowException>()
+                .Should().Throw<AssemblerException>()
+                .WithInnerException<OverflowException>()
                 .WithMessage("Value was either too large or too small for a UInt16.");
         }
 

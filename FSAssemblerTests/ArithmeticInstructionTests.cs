@@ -392,7 +392,7 @@ namespace FSAssemblerTests
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
                   .WithInnerException<AssemblerException>()
-                  .WithMessage("*requires two registers*");
+                  .WithMessage("*CMP instruction requires either two registers*");
         }
 
         [Fact]
@@ -405,7 +405,7 @@ namespace FSAssemblerTests
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
                   .WithInnerException<AssemblerException>()
-                  .WithMessage("*CMP instruction requires two registers*");
+                  .WithMessage("*CMP instruction requires either two registers (CMP A,B)*");
         }
 
         [Fact]

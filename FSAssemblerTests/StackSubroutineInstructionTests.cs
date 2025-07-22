@@ -460,7 +460,7 @@ namespace FSAssemblerTests
             // Act & Assert
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
-                  .WithMessage("*Label non défini*");
+                  .WithMessage("*Undefined label: UNDEFINED_FUNCTION*");
         }
 
         [Fact]

@@ -145,7 +145,7 @@ namespace FSAssemblerTests
 
             // Assert
             result.Should().NotBeNull();
-            result.Should().HaveCount(3);
+            result.Should().HaveCount(2);
             result[0].Should().Be(0x00); // NOP
             result[1].Should().Be(0x01); // HALT
         }
