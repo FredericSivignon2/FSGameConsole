@@ -12,7 +12,7 @@ class Program
         
         try
         {
-            BitmapTestProgram.RunBitmapTest();
+            // BitmapTestProgram.RunBitmapTest();
         }
         catch (Exception ex)
         {

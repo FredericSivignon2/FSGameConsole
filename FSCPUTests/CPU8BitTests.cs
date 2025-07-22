@@ -1,5 +1,6 @@
 using FSCPU;
 using FluentAssertions;
+using FSCPU.Cycles;
 
 namespace FSCPUTests
 {
@@ -478,6 +479,85 @@ namespace FSCPUTests
 
             _cpu.SP = 0x5678;
             _cpu.SP.Should().Be(0x5678);
+        }
+
+        [Fact]
+        public void AdaptiveClockManager_ShouldSupportDifferentModes()
+        {
+            // Arrange
+            _memory.WriteByte(0x0000, 0x10); // LDA #42
+            _memory.WriteByte(0x0001, 0x2A);
+            _memory.WriteByte(0x0002, 0x01); // HALT
+            _cpu.PC = 0x0000;
+
+            // Test Stepped Mode
+            _cpu.StartWithMode(ClockManager.ClockMode.Stepped);
+            
+            // Act & Assert for Stepped Mode
+            _cpu.Clock.Mode.Should().Be(ClockManager.ClockMode.Stepped);
+            _cpu.Clock.IsRunning.Should().BeTrue();
+            
+            // Execute one step manually
+            _cpu.ExecuteStep();
+            _cpu.A.Should().Be(42);
+            
+            _cpu.Stop();
+
+            // Test Limited Mode  
+            _cpu.PC = 0x0000; // Reset PC
+            _cpu.A = 0; // Reset A
+            _cpu.StartWithMode(ClockManager.ClockMode.Limited, 1000); // 1kHz
+            
+            // Act & Assert for Limited Mode
+            _cpu.Clock.Mode.Should().Be(ClockManager.ClockMode.Limited);
+            _cpu.Clock.TargetFrequency.Should().Be(1000);
+            
+            // Give it some time to execute
+            Thread.Sleep(50);
+            _cpu.Stop();
+        }
+
+        [Fact]
+        public void ClockManager_ShouldProvideClockInfo()
+        {
+            // Arrange & Act
+            _cpu.StartWithMode(ClockManager.ClockMode.Fast);
+            string info = _cpu.Clock.GetClockInfo();
+            _cpu.Stop();
+
+            // Assert
+            info.Should().Contain("Fast");
+            info.Should().Contain("Adaptive Clock Manager");
+            info.Should().Contain("Cycles executed");
+        }
+
+        [Fact]
+        public void ClockManager_ShouldTrackPerformanceMetrics()
+        {
+            // Arrange
+            _memory.WriteByte(0x0000, 0x00); // NOP
+            _memory.WriteByte(0x0001, 0x00); // NOP  
+            _memory.WriteByte(0x0002, 0x01); // HALT
+            _cpu.PC = 0x0000;
+
+            // Act
+            _cpu.StartWithMode(ClockManager.ClockMode.Fast);
+            
+            // Wait for execution to complete
+            var timeout = DateTime.UtcNow.AddSeconds(1);
+            while (_cpu.IsRunning && DateTime.UtcNow < timeout)
+            {
+                Thread.Sleep(1);
+            }
+            
+            _cpu.Stop();
+
+            // Assert
+            _cpu.TotalCyclesExecuted.Should().BeGreaterThan(0);
+            _cpu.TotalInstructionsExecuted.Should().BeGreaterThan(0);
+            
+            // At least NOP, NOP, HALT should have executed
+            _cpu.TotalInstructionsExecuted.Should().BeGreaterThanOrEqualTo(3);
         }
     }
 }

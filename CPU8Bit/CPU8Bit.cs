@@ -113,8 +113,7 @@ public class CPU8Bit
     // Gestionnaire d'horloge pour le timing réaliste
     public ClockManager Clock { get; private set; }
 
-    // Gestionnaire d'appels système
-    public SystemCallManager? SystemCalls { get; set; }
+    public IOBusController IOBus { get; private set; }
 
     // État du processeur
     public bool IsRunning { get; private set; }
@@ -129,9 +128,7 @@ public class CPU8Bit
         ALU = new ALU(this);
         SR = new StatusRegister();
         Clock = new ClockManager(this);
-
-        // Le SystemCallManager sera injecté depuis FormMain
-        // pour éviter les dépendances circulaires
+        IOBus = new IOBusController();
 
         Reset();
     }
@@ -189,13 +186,37 @@ public class CPU8Bit
     /// Démarre l'exécution du processeur avec horloge réaliste
     /// </summary>
     /// <param name="startClock">If true, also start the process clock.</param>
-    public void Start(bool startClock = true)
+    /// <param name="mode">Clock execution mode (Limited by default for compatibility)</param>
+    /// <param name="targetFrequency">Optional target frequency (uses mode defaults if 0)</param>
+    public void Start(bool startClock = true, ClockManager.ClockMode mode = ClockManager.ClockMode.Limited, long targetFrequency = 0)
     {
         IsRunning = true;
         if (startClock)
         {
+            // Configure clock mode before starting
+            Clock.SetMode(mode, targetFrequency);
             Clock.Start();
         }
+    }
+    
+    /// <summary>
+    /// Start with specific clock mode - convenient overload
+    /// </summary>
+    /// <param name="mode">Clock execution mode</param>
+    /// <param name="targetFrequency">Optional target frequency</param>
+    public void StartWithMode(ClockManager.ClockMode mode, long targetFrequency = 0)
+    {
+        Start(true, mode, targetFrequency);
+    }
+    
+    /// <summary>
+    /// Execute single step (for debugging or stepped mode)
+    /// </summary>
+    public void ExecuteStep()
+    {
+        if (!IsRunning) return;
+        
+        Clock.Step();
     }
 
     /// <summary>
@@ -661,6 +682,38 @@ public class CPU8Bit
                 _regF = Memory.ReadByte(SP);
                 SP++;
                 SR.UpdateZeroFlag(_regF);
+                break;
+
+            // === I/O 8bits PORT INSTRUCTIONS ===
+            case 0x80: // OUT (port), A - Output A to I/O port
+                {
+                    byte port = Memory.ReadByte(PC++);
+                    IOBus.WritePort(port, _regA);  // Nouveau composant IOBus
+                }
+                break;
+
+            case 0x81: // IN A, (port) - Input from I/O port to A
+                {
+                    byte port = Memory.ReadByte(PC++);
+                    _regA = IOBus.ReadPort(port);
+                    SR.UpdateZeroFlag(_regA);
+                }
+                break;
+
+            // === I/O 16 bits PORT INSTRUCTIONS ===
+            case 0x82: // OUT (port), DA - Output DA to I/O port
+                {
+                    byte port = Memory.ReadByte(PC++);
+                    IOBus.WritePort16(port, _regDA);  // Nouveau composant IOBus
+                }
+                break;
+
+            case 0x83: // IN DA, (port) - Input from I/O port to DA
+                {
+                    byte port = Memory.ReadByte(PC++);
+                    _regDA = IOBus.ReadPort16(port);
+                    SR.UpdateZeroFlag(_regDA);
+                }
                 break;
 
             // === MEMORY LOAD INSTRUCTIONS (0x80-0x85) ===

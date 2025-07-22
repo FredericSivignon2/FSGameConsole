@@ -7,7 +7,7 @@ namespace FSCPU.Graphics;
 /// Approche CPC authentique - PAS de mémoire texte séparée
 /// Tout est rendu directement dans la mémoire bitmap unifiée
 /// </summary>
-public class VideoController
+public class VideoController2
 {
     // Configuration de l'écran
     public const int ScreenWidth = 320;
@@ -26,7 +26,7 @@ public class VideoController
     private readonly int _bitmapMemoryStart;
     private readonly int _bitmapMemorySize;
     
-    public VideoController(Memory memory)
+    public VideoController2(Memory memory)
     {
         _memory = memory ?? throw new ArgumentNullException(nameof(memory));
         

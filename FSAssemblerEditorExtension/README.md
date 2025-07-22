@@ -8,7 +8,7 @@ This Visual Studio extension provides syntax highlighting for FS8 assembler file
 The extension provides colorized syntax highlighting for all FS8 assembler elements:
 
 - **Instructions** (Blue, Bold): All 80+ FS8 CPU instructions including:
-  - Basic: `NOP`, `HALT`, `SYS`
+  - Basic: `NOP`, `HALT`
   - Load: `LDA`, `LDB`, `LDDA`, `LDIX1`, etc.
   - Arithmetic: `ADD`, `SUB`, `ADD16`, `INC`, `DEC`, etc.
   - Logical: `AND`, `OR`, `XOR`, `NOT`, `SHL`, `SHR`
@@ -129,9 +129,6 @@ The extension recognizes all instructions from the FS8 Enhanced instruction set:
 
 ### Subroutine Instructions (0x60-0x61)
 - `CALL`, `RET`
-
-### System Instructions (0xF0)
-- `SYS` - System call
 
 ## Technical Details
 

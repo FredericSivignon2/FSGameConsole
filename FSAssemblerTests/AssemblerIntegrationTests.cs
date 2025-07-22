@@ -479,9 +479,6 @@ namespace FSAssemblerTests
                 "POP C", "POP B",
                 "RET",
                 "",
-                "; System",
-                "SYS",
-                "",
                 "; Data",
                 "DATA:",
                 "DB 1, 2, 3, 'A', 'B', 0xFF, $80"

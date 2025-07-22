@@ -131,29 +131,13 @@ namespace FSAssemblerTests
         }
 
         [Fact]
-        public void AssembleLines_WithSingleSYS_ShouldReturnCorrectOpcode()
-        {
-            // Arrange
-            string[] lines = { "SYS" };
-
-            // Act
-            byte[] result = _assembler.AssembleLines(lines);
-
-            // Assert
-            result.Should().NotBeNull();
-            result.Should().HaveCount(1);
-            result[0].Should().Be(0xF0); // SYS opcode
-        }
-
-        [Fact]
         public void AssembleLines_WithMultipleBasicInstructions_ShouldReturnCorrectOpcodes()
         {
             // Arrange
             string[] lines = 
             {
                 "NOP",
-                "HALT",
-                "SYS"
+                "HALT"
             };
 
             // Act
@@ -164,7 +148,6 @@ namespace FSAssemblerTests
             result.Should().HaveCount(3);
             result[0].Should().Be(0x00); // NOP
             result[1].Should().Be(0x01); // HALT
-            result[2].Should().Be(0xF0); // SYS
         }
 
         [Fact]

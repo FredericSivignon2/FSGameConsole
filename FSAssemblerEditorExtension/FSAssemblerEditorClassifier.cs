@@ -29,7 +29,7 @@ namespace FSAssemblerEditorExtension
         private static readonly HashSet<string> Instructions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
             // Basic instructions
-            "NOP", "HALT", "SYS",
+            "NOP", "HALT",
             
             // Load instructions 8-bit
             "LDA", "LDB", "LDC", "LDD", "LDE", "LDF",

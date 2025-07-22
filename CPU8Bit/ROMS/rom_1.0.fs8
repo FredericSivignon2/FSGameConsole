@@ -53,6 +53,8 @@ WelcomeMessage:
     DB "FS System v1.0"
 ScreenSize:
     DB 0x40, 0x01, 0xC8, 0x00 ; Width: 320 pixels (0x4001 little endian), Height: 200 pixels (0xC8 little endian)
+ScreenDepth:
+    DB 0x04 ; 4 bits per pixel (16 colors)
 CharSize:
     DB 0x08, 0x08 ; Width: 8 pixels, Height: 8 pixels
 AmstradCPCFont:

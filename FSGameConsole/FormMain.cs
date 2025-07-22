@@ -9,10 +9,9 @@ namespace FSGameConsole
         private Memory? _memory;
         
         // Nouveau système bitmap CPC authentique
-        private VideoController? _videoController;
-        private BitmapRenderer? _bitmapRenderer;
+        //private VideoController? _videoController;
+        //private BitmapRenderer? _bitmapRenderer;
         
-        // PLUS de cpuTimer ! Le timing est maintenant géré par ClockManager
         
         public FormMain()
         {
@@ -27,11 +26,8 @@ namespace FSGameConsole
             _cpu = new FSCPU.CPU8Bit(_memory);
             
             // Initialiser le nouveau système bitmap CPC authentique
-            _videoController = new VideoController(_memory);
-            _bitmapRenderer = new BitmapRenderer(_videoController);
-            
-            // Configurer le gestionnaire d'appels système
-            _cpu.SystemCalls = new SystemCallManager(_memory, _videoController);
+            //_videoController = new VideoController(_memory);
+            //_bitmapRenderer = new BitmapRenderer(_videoController);
             
             // Effectuer un démarrage à froid (boot depuis la ROM avec timing authentique)
             _cpu.ColdBoot();
@@ -60,7 +56,7 @@ namespace FSGameConsole
         
         private void BtnReset_Click(object? sender, EventArgs e)
         {
-            if (_cpu != null && _memory != null && _videoController != null)
+            if (_cpu != null && _memory != null /*&& _videoController != null*/)
             {
                 _cpu.Stop();
                 
@@ -77,7 +73,7 @@ namespace FSGameConsole
         
         private void BtnColdBoot_Click(object? sender, EventArgs e)
         {
-            if (_cpu != null && _memory != null && _videoController != null)
+            if (_cpu != null && _memory != null /*&& _videoController != null*/)
             {
                 _cpu.Stop();
                 
@@ -94,7 +90,7 @@ namespace FSGameConsole
         
         private void BtnLoadDemo_Click(object? sender, EventArgs e)
         {
-            if (_memory != null && _cpu != null && _videoController != null)
+            if (_memory != null && _cpu != null /*&& _videoController != null*/)
             {
                 // Programme de démonstration utilisant les nouveaux appels système
                 byte[] demoProgram = {
@@ -161,7 +157,7 @@ namespace FSGameConsole
         /// </summary>
         private void BtnLoadBin_Click(object? sender, EventArgs e)
         {
-            if (_memory == null || _cpu == null || _videoController == null) return;
+            if (_memory == null || _cpu == null /*|| _videoController == null*/) return;
 
             // Configurer le dialogue de sélection de fichier
             using var openFileDialog = new OpenFileDialog
@@ -237,7 +233,7 @@ namespace FSGameConsole
                 UpdateDisplay();
                 
                 // Synchroniser l'affichage
-                _videoController?.SyncFromMemory();
+                //_videoController?.SyncFromMemory();
             }
         }
         
@@ -265,8 +261,8 @@ namespace FSGameConsole
 
         private void UpdateDisplay()
         {
-            UpdateRegistersDisplay();
-            UpdateMemoryDisplay();
+            //UpdateRegistersDisplay();
+            //UpdateMemoryDisplay();
         }
         
         private void UpdateRegistersDisplay()
@@ -324,7 +320,7 @@ namespace FSGameConsole
         /// </summary>
         private void RenderBitmapScreen()
         {
-            if (_bitmapRenderer == null || screenPanel == null) return;
+            if (/*_bitmapRenderer == null ||*/ screenPanel == null) return;
             
             try
             {
@@ -334,7 +330,7 @@ namespace FSGameConsole
                     var destRect = new Rectangle(0, 0, screenPanel.Width, screenPanel.Height);
                     
                     // Rendre directement sur le panel avec le nouveau système CPC authentique
-                    _bitmapRenderer.RenderToGraphics(graphics, destRect);
+                    //_bitmapRenderer.RenderToGraphics(graphics, destRect);
                 }
             }
             catch (Exception ex)
@@ -357,7 +353,7 @@ namespace FSGameConsole
             // Nettoyer les ressources
             _cpu?.Stop(); // Arrête automatiquement le ClockManager
             displayTimer?.Stop();
-            _bitmapRenderer?.Dispose();
+            //_bitmapRenderer?.Dispose();
             _cpu?.Dispose(); // Nettoie le ClockManager
             
             base.OnFormClosed(e);

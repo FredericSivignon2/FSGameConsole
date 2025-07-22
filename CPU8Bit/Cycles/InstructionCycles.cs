@@ -116,9 +116,6 @@ public static class InstructionCycles
     public const int ADDIX1 = 4;       // ADDIDX #imm16 - 4 cycles (opcode + 16-bit immediate + add)
     public const int ADDIDY1 = 4;      // ADDIDY #imm16 - 4 cycles
 
-    // System call
-    public const int SYS_CALL = 8;      // SYS - System call (8 cycles)
-
     // Index register transfer instructions (0xF5, 0xF6, 0xF9)
     public const int MVIX1IY1 = 2;     // MVIDXIDY - 2 cycles (16-bit transfer)
     public const int MVIY1IX1 = 2;     // MVIDYIDX - 2 cycles
@@ -292,9 +289,6 @@ public static class InstructionCycles
             // Index register add immediate (0xE8, 0xEA)
             0xE8 => 4,          // ADDIDX #imm16 - 4 cycles (opcode + 16-bit immediate + add)
             0xEA => 4,          // ADDIDY #imm16 - 4 cycles
-
-            // System call
-            0xF0 => SYS_CALL,   // SYS - System call (8 cycles)
 
             // Index register transfer instructions (0xF5, 0xF6, 0xF9)
             0xF5 => 2,          // MVIDXIDY - 2 cycles (16-bit transfer)

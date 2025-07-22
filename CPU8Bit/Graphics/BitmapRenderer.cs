@@ -7,7 +7,7 @@ namespace FSCPU.Graphics;
 /// <summary>
 /// Moteur de rendu bitmap pour convertir le frame buffer en image affichable
 /// </summary>
-public class BitmapRenderer
+/*public class BitmapRenderer
 {
     private readonly VideoController _videoController;
     private Bitmap? _displayBitmap;
@@ -144,4 +144,4 @@ public class BitmapRenderer
         _displayGraphics?.Dispose();
         _displayBitmap?.Dispose();
     }
-}
+}*/
