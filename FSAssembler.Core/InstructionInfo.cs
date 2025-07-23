@@ -1,32 +1,34 @@
-﻿namespace FSAssembler;
+﻿namespace FSAssembler.Core
+{ 
 
 /// <summary>
 /// Information about an assembly instruction including its opcode and characteristics
 /// </summary>
-public record InstructionInfo
+public class InstructionInfo
 {
     /// <summary>
     /// The base opcode for this instruction
     /// </summary>
-    public byte BaseOpcode { get; init; }
+    public byte BaseOpcode { get; internal set; }
 
     /// <summary>
     /// The base size of this instruction in bytes (including opcode)
     /// </summary>
-    public ushort BaseSize { get; init; }
+    public ushort BaseSize { get; internal set; }
 
     /// <summary>
     /// Whether this instruction requires special handling (has complex logic)
     /// </summary>
-    public bool RequiresSpecialHandling { get; init; }
+    public bool RequiresSpecialHandling { get; internal set; }
 
     /// <summary>
     /// Whether this instruction has variable size based on operands
     /// </summary>
-    public bool HasVariableSize { get; init; }
+    public bool HasVariableSize { get; internal set; }
 
     /// <summary>
     /// Description for documentation purposes
     /// </summary>
-    public string Description { get; init; } = string.Empty;
+    public string Description { get; internal set; } = string.Empty;
+}
 }

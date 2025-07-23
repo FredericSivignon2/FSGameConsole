@@ -1,5 +1,5 @@
 ﻿Startup:
-    LDIX1 WelcomeMessage    
+    LDIDX WelcomeMessage    
     CALL PrintString      
     HALT
 
@@ -13,8 +13,8 @@ PrintString:
     LDC #0                  ; Load 0 into C for comparison
 
 PrintString_Loop:
-    ; Load the current character from IDX1
-    LDA (IDX1)              ; Load character pointed by IDX1 into A
+    ; Load the current character from IDX
+    LDA (IDX)              ; Load character pointed by IDX into A
 
     ; Check if it's the end character (0x00)
     CMP A, #0

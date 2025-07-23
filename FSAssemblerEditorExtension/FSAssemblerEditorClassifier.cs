@@ -1,4 +1,5 @@
-﻿using Microsoft.VisualStudio.Text;
+﻿using FSAssembler.Core;
+using Microsoft.VisualStudio.Text;
 using Microsoft.VisualStudio.Text.Classification;
 using System;
 using System.Collections.Generic;
@@ -23,50 +24,15 @@ namespace FSAssemblerEditorExtension
         private readonly IClassificationType stringClassificationType;
         private readonly IClassificationType indexedAddressClassificationType;
 
+        private static HashSet<string> GetInstructions()
+        {
+            return new HashSet<string>(FSAssembler.Core.Instuctions.GetAllInstructions().Keys);
+        }
+
         /// <summary>
         /// FS8 instruction patterns based on the copilot instructions
         /// </summary>
-        private static readonly HashSet<string> Instructions = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
-        {
-            // Basic instructions
-            "NOP", "HALT",
-            
-            // Load instructions 8-bit
-            "LDA", "LDB", "LDC", "LDD", "LDE", "LDF",
-            
-            // Load instructions 16-bit
-            "LDDA", "LDDB", "LDIX1", "LDIX2", "LDIY1", "LDIY2",
-            
-            // Arithmetic instructions
-            "ADD", "SUB", "ADD16", "SUB16", "INC", "DEC", "INC16", "DEC16", "CMP",
-            
-            // Logical instructions
-            "AND", "OR", "XOR", "NOT", "SHL", "SHR",
-            
-            // Jump instructions
-            "JMP", "JZ", "JNZ", "JC", "JNC", "JN", "JNN", "JR", "JRZ", "JRNZ", "JRC",
-            
-            // Store instructions
-            "STA", "STB", "STC", "STD", "STDA", "STDB",
-            
-            // Transfer instructions
-            "MOV", "SWP",
-            
-            // Stack instructions
-            "PUSH", "POP", "PUSH16", "POP16",
-            
-            // Subroutine instructions
-            "CALL", "RET",
-            
-            // Index instructions
-            "INCIX1", "DECIX1", "INCIY1", "DECIY1", "INCIX2", "DECIX2", "INCIY2", "DECIY2",
-            "ADDIX1", "ADDIX2", "ADDIY1", "ADDIY2",
-            "MVIX1IX2", "MVIX2IX1", "MVIY1IY2", "MVIY2IY1", "MVIX1IY1", "MVIY1IX1",
-            "SWPIX1IX2", "SWPIY1IY2", "SWPIX1IY1",
-            
-            // Auto-increment/decrement instructions
-            "LDAIX1+", "LDAIY1+", "STAIX1+", "STAIY1+", "LDAIX1-", "LDAIY1-", "STAIX1-", "STAIY1-"
-        };
+        private static readonly HashSet<string> Instructions = GetInstructions();
 
         /// <summary>
         /// FS8 CPU registers
@@ -74,7 +40,7 @@ namespace FSAssemblerEditorExtension
         private static readonly HashSet<string> Registers = new HashSet<string>(StringComparer.OrdinalIgnoreCase)
         {
             "A", "B", "C", "D", "E", "F", "PC", "SP", "SR",
-            "DA", "DB", "IDX1", "IDX2", "IDY1", "IDY2"
+            "DA", "DB", "IDX", "IDY"
         };
 
         /// <summary>
