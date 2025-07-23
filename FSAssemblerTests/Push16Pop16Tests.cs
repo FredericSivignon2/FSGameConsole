@@ -1,5 +1,6 @@
-using FSAssembler;
 using FluentAssertions;
+using FSAssembler;
+using System.Reflection;
 
 namespace FSAssemblerTests
 {
@@ -116,6 +117,7 @@ namespace FSAssemblerTests
             // Act & Assert
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
+                .WithInnerException<TargetInvocationException>()
                   .WithInnerException<AssemblerException>()
                   .WithMessage("*Invalid PUSH16 register: A*");
         }
@@ -129,6 +131,7 @@ namespace FSAssemblerTests
             // Act & Assert
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
+                .WithInnerException<TargetInvocationException>()
                   .WithInnerException<AssemblerException>()
                   .WithMessage("*Invalid POP16 register: B*");
         }

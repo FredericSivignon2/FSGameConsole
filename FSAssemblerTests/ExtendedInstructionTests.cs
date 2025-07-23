@@ -1,5 +1,6 @@
-using FSAssembler;
 using FluentAssertions;
+using FSAssembler;
+using System.Reflection;
 
 namespace FSAssemblerTests
 {
@@ -463,6 +464,7 @@ namespace FSAssemblerTests
             _assembler.Invoking(a => a.AssembleLines(lines))
                 .Should().Throw<AssemblerException>()
                 .WithMessage("Line 1")
+                .WithInnerException<TargetInvocationException>()
                 .WithInnerException<AssemblerException>()
                 .WithMessage("*Instruction STE requires one operand*");
         }
@@ -477,6 +479,7 @@ namespace FSAssemblerTests
             _assembler.Invoking(a => a.AssembleLines(lines))
                 .Should().Throw<AssemblerException>()
                 .WithMessage("Line 1")
+                .WithInnerException<TargetInvocationException>()
                 .WithInnerException<AssemblerException>()
                 .WithMessage("*Invalid PUSH register: X*");
         }
@@ -491,6 +494,7 @@ namespace FSAssemblerTests
             _assembler.Invoking(a => a.AssembleLines(lines))
                 .Should().Throw<AssemblerException>()
                 .WithMessage("Line 1")
+                .WithInnerException<TargetInvocationException>()
                 .WithInnerException<AssemblerException>()
                 .WithMessage("*Invalid SWP registers: A,X*");
         }
@@ -505,6 +509,7 @@ namespace FSAssemblerTests
             _assembler.Invoking(a => a.AssembleLines(lines))
                 .Should().Throw<AssemblerException>()
                 .WithMessage("Line 1")
+                .WithInnerException<TargetInvocationException>()
                 .WithInnerException<AssemblerException>()
                 .WithMessage("*Invalid MOV registers: DA,X*");
         }

@@ -1,5 +1,6 @@
-using FSAssembler;
 using FluentAssertions;
+using FSAssembler;
+using System.Reflection;
 
 namespace FSAssemblerTests
 {
@@ -279,6 +280,7 @@ namespace FSAssemblerTests
             _assembler.Invoking(a => a.AssembleLines(lines))
                 .Should().Throw<AssemblerException>()
                 .WithMessage("Line 1")
+                .WithInnerException<TargetInvocationException>()
                 .WithInnerException<AssemblerException>()
                 .WithMessage("*Invalid CMP registers: A,42 (only A,B and A,C supported)*");
         }
@@ -293,6 +295,7 @@ namespace FSAssemblerTests
             _assembler.Invoking(a => a.AssembleLines(lines))
                 .Should().Throw<AssemblerException>()
                 .WithMessage("Line 1")
+                .WithInnerException<TargetInvocationException>()
                 .WithInnerException<AssemblerException>()
                 .WithMessage("*Invalid CMP register: X*");
         }
@@ -307,6 +310,7 @@ namespace FSAssemblerTests
             _assembler.Invoking(a => a.AssembleLines(lines))
                 .Should().Throw<AssemblerException>()
                 .WithMessage("Line 1")
+                .WithInnerException<TargetInvocationException>()
                 .WithInnerException<AssemblerException>()
                 .WithMessage("*CMP instruction requires either two registers (CMP A,B) or register with immediate (CMP A,#imm)*");
         }
@@ -320,6 +324,7 @@ namespace FSAssemblerTests
             // Act & Assert
             _assembler.Invoking(a => a.AssembleLines(lines))
                 .Should().Throw<AssemblerException>()
+                .WithInnerException<TargetInvocationException>()
                 .WithInnerException<OverflowException>()
                 .WithMessage("Value was either too large or too small for an unsigned byte.");
         }
@@ -333,6 +338,7 @@ namespace FSAssemblerTests
             // Act & Assert
             _assembler.Invoking(a => a.AssembleLines(lines))
                 .Should().Throw<AssemblerException>()
+                .WithInnerException<TargetInvocationException>()
                 .WithInnerException<OverflowException>()
                 .WithMessage("Value was either too large or too small for a UInt16.");
         }

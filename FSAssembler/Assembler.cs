@@ -84,153 +84,16 @@ public class Assembler
     {
         var parts = SplitInstruction(line);
         string mnemonic = parts[0].ToUpper();
-        var bytes = new List<byte>();
 
-        if (mnemonic == "DB")
-        {
-            if (parts.Length == 1)
-                throw new AssemblerException("DB directive requires at least one value");
-
-            // Join all parts after "DB" to handle comma-separated values properly
-            string datapart = string.Join(" ", parts.Skip(1));
-            var values = ParseDataValues(datapart);
-            bytes.AddRange(values);
-            return bytes;
-        }
-
-        // Handle special instructions that require custom logic
-        switch (mnemonic)
-        {
-            case "LDA":
-            case "LDB":
-            case "LDC":
-            case "LDD":
-            case "LDE":
-            case "LDF":
-                return AssembleLoadInstruction(mnemonic, parts, currentAddress);
-
-            case "STA":
-            case "STB":
-            case "STC":
-            case "STD":
-            case "STE":
-            case "STF":
-                return AssembleStoreInstruction(mnemonic, parts, currentAddress);
-
-            case "LDDA":
-            case "LDDB":
-                return AssembleLoadInstruction16(mnemonic, parts, currentAddress);
-
-            case "STDA":
-            case "STDB":
-                return AssembleStoreInstruction(mnemonic, parts, currentAddress);
-
-            case "LDIDX":
-            case "LDIDY":
-                return AssembleIndexLoadInstruction(mnemonic, parts, currentAddress);
-
-            case "ADDIDX":
-            case "ADDIDY":
-                return AssembleIndexAddInstruction(mnemonic, parts, currentAddress);
-
-            case "INC":
-            case "DEC":
-                return AssembleIncDecInstruction(mnemonic, parts);
-
-            case "INC16":
-            case "DEC16":
-                return AssembleInc16Dec16Instruction(mnemonic, parts);
-
-            case "CMP":
-                return AssembleCmpInstruction(parts, line);
-
-            case "AND":
-            case "OR":
-            case "XOR":
-                return AssembleLogicalInstruction(mnemonic, parts, line);
-
-            case "SHL":
-                return AssembleShlInstruction(parts);
-
-            case "JR":
-            case "JRZ":
-            case "JRNZ":
-            case "JRC":
-                return AssembleRelativeJumpInstruction(mnemonic, parts, currentAddress);
-
-            case "PUSH":
-            case "POP":
-            case "PUSH16":
-            case "POP16":
-                return AssembleStackInstruction(mnemonic, parts);
-
-            case "MOV":
-                return AssembleMovInstruction(parts, line);
-
-            case "SWP":
-                return AssembleSwpInstruction(parts, line);
-        }
-
-        // Standard instruction handling
+        // Look up instruction in our centralized dictionary
         if (!_instructions.TryGetValue(mnemonic, out InstructionInfo instructionInfo))
             throw new AssemblerException($"Unknown instruction: {mnemonic}");
 
-        bytes.Add(instructionInfo.BaseOpcode);
+        // All instructions now have a custom assembly function - just call it
+        if (instructionInfo.AssemblyFunction == null)
+            throw new AssemblerException($"No assembly function defined for instruction: {mnemonic}");
 
-        // Handle standard instructions with operands
-        switch (mnemonic)
-        {
-            case "NOP":
-            case "HALT":
-            case "RET":
-            case "SYS":
-            case "ADD":
-            case "SUB":
-            case "ADD16":
-            case "SUB16":
-            case "NOT":
-            case "SHR":
-            case "DEBUG":
-            case "EXT1":
-            case "EXT2":
-            // Index register operations that don't take parameters
-            case "INCIDX":
-            case "DECIDX":
-            case "INCIDY":
-            case "DECIDY":
-            case "LDAIDX+" :
-            case "LDAIDY+" :
-            case "STAIDX+" :
-            case "STAIDY+" :
-            case "LDAIDX-" :
-            case "LDAIDY-" :
-            case "STAIDX-" :
-            case "STAIDY-" :
-            case "MVIDXIDY":
-            case "MVIDYIDX":
-            case "SWPIDXIDY":
-                if (parts.Length > 1)
-                    throw new AssemblerException($"Instruction {mnemonic} takes no parameters");
-                break;
-
-            case "JMP":
-            case "JZ":
-            case "JNZ":
-            case "JC":
-            case "JNC":
-            case "JN":
-            case "JNN":
-            case "CALL":
-                if (parts.Length != 2)
-                    throw new AssemblerException($"Instruction {mnemonic} requires an address");
-
-                ushort address = ParseAddress(parts[1], currentAddress);
-                bytes.Add((byte)(address & 0xFF));
-                bytes.Add((byte)((address >> 8) & 0xFF));
-                break;
-        }
-
-        return bytes;
+        return instructionInfo.AssemblyFunction(this, mnemonic, parts, currentAddress);
     }
 
     private List<byte> AssembleLoadInstruction(string mnemonic, string[] parts, ushort currentAddress)

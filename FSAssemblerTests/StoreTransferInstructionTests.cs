@@ -1,5 +1,6 @@
-using FSAssembler;
 using FluentAssertions;
+using FSAssembler;
+using System.Reflection;
 
 namespace FSAssemblerTests
 {
@@ -378,6 +379,7 @@ namespace FSAssemblerTests
             // Act & Assert
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
+                .WithInnerException<TargetInvocationException>()
                   .WithInnerException<AssemblerException>()
                   .WithMessage("*Instruction STA requires one operand*");
         }
@@ -391,6 +393,7 @@ namespace FSAssemblerTests
             // Act & Assert
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
+                .WithInnerException<TargetInvocationException>()
                   .WithInnerException<AssemblerException>()
                   .WithMessage("*requires two registers*");
         }
@@ -404,6 +407,7 @@ namespace FSAssemblerTests
             // Act & Assert
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
+                .WithInnerException<TargetInvocationException>()
                   .WithInnerException<AssemblerException>()
                   .WithMessage("*MOV instruction requires two registers*");
         }
@@ -417,6 +421,7 @@ namespace FSAssemblerTests
             // Act & Assert
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
+                .WithInnerException<TargetInvocationException>()
                   .WithInnerException<AssemblerException>()
                   .WithMessage("*Invalid MOV registers*");
         }
@@ -430,6 +435,7 @@ namespace FSAssemblerTests
             // Act & Assert
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
+                  .WithInnerException<TargetInvocationException>()
                   .WithInnerException<AssemblerException>()
                   .WithMessage("*requires two registers*");
         }
@@ -443,6 +449,7 @@ namespace FSAssemblerTests
             // Act & Assert
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
+                .WithInnerException<TargetInvocationException>()
                   .WithInnerException<AssemblerException>()
                   .WithMessage("*SWP instruction requires two registers*");
         }
@@ -456,6 +463,7 @@ namespace FSAssemblerTests
             // Act & Assert
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
+                .WithInnerException<TargetInvocationException>()
                   .WithInnerException<AssemblerException>()
                   .WithMessage("*Invalid SWP registers: B,C*");
         }

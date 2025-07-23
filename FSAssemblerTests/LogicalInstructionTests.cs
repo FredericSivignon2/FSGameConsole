@@ -1,5 +1,6 @@
-using FSAssembler;
 using FluentAssertions;
+using FSAssembler;
+using System.Reflection;
 
 namespace FSAssemblerTests
 {
@@ -234,6 +235,7 @@ namespace FSAssemblerTests
             // Act & Assert
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
+                .WithInnerException<TargetInvocationException>()
                   .WithInnerException<AssemblerException>()
                   .WithMessage("*requires two registers*");
         }
@@ -247,6 +249,7 @@ namespace FSAssemblerTests
             // Act & Assert
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
+                .WithInnerException<TargetInvocationException>()
                   .WithInnerException<AssemblerException>()
                   .WithMessage("*AND instruction requires two registers*");
         }
@@ -260,6 +263,7 @@ namespace FSAssemblerTests
             // Act & Assert
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
+                .WithInnerException<TargetInvocationException>()
                   .WithInnerException<AssemblerException>()
                   .WithMessage("*Invalid AND registers*");
         }
@@ -273,6 +277,7 @@ namespace FSAssemblerTests
             // Act & Assert
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
+                  .WithInnerException<TargetInvocationException>()
                   .WithInnerException<AssemblerException>()
                   .WithMessage("*Invalid OR registers*");
         }
@@ -286,6 +291,7 @@ namespace FSAssemblerTests
             // Act & Assert
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
+                .WithInnerException<TargetInvocationException>()
                   .WithInnerException<AssemblerException>()
                   .WithMessage("*Invalid XOR registers*");
         }
@@ -325,6 +331,7 @@ namespace FSAssemblerTests
             // Act & Assert
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
+                .WithInnerException<TargetInvocationException>()
                   .WithInnerException<AssemblerException>()
                   .WithMessage("*requires a register*");
         }
@@ -338,6 +345,7 @@ namespace FSAssemblerTests
             // Act & Assert
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
+                .WithInnerException<TargetInvocationException>()
                   .WithInnerException<AssemblerException>()
                   .WithMessage("*only A and B supported*");
         }

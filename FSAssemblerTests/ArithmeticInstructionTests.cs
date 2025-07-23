@@ -1,5 +1,6 @@
 using FSAssembler;
 using FluentAssertions;
+using System.Reflection;
 
 namespace FSAssemblerTests
 {
@@ -339,6 +340,7 @@ namespace FSAssemblerTests
             // Act & Assert
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
+                  .WithInnerException<TargetInvocationException>()
                   .WithInnerException<AssemblerException>()
                   .WithMessage("*requires a register*");
         }
@@ -352,6 +354,7 @@ namespace FSAssemblerTests
             // Act & Assert
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
+                  .WithInnerException<TargetInvocationException>()
                   .WithInnerException<AssemblerException>()
                   .WithMessage("*Invalid DEC register*");
         }
@@ -365,6 +368,7 @@ namespace FSAssemblerTests
             // Act & Assert
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
+                  .WithInnerException<TargetInvocationException>()
                   .WithInnerException<AssemblerException>()
                   .WithMessage("*Invalid INC16 register*");
         }
@@ -378,6 +382,7 @@ namespace FSAssemblerTests
             // Act & Assert
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
+                  .WithInnerException<TargetInvocationException>()
                   .WithInnerException<AssemblerException>()
                   .WithMessage("*requires a 16-bit register*");
         }
@@ -391,6 +396,7 @@ namespace FSAssemblerTests
             // Act & Assert
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
+                  .WithInnerException<TargetInvocationException>()
                   .WithInnerException<AssemblerException>()
                   .WithMessage("*CMP instruction requires either two registers*");
         }
@@ -404,6 +410,7 @@ namespace FSAssemblerTests
             // Act & Assert
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
+                  .WithInnerException<TargetInvocationException>()
                   .WithInnerException<AssemblerException>()
                   .WithMessage("*CMP instruction requires either two registers (CMP A,B)*");
         }
@@ -417,6 +424,7 @@ namespace FSAssemblerTests
             // Act & Assert
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
+                  .WithInnerException<TargetInvocationException>()
                   .WithInnerException<AssemblerException>()
                   .WithMessage("*only A,B and A,C supported*");
         }

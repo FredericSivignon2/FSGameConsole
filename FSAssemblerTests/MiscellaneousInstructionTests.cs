@@ -1,5 +1,6 @@
-using FSAssembler;
 using FluentAssertions;
+using FSAssembler;
+using System.Reflection;
 
 namespace FSAssemblerTests
 {
@@ -584,6 +585,7 @@ namespace FSAssemblerTests
             // Act & Assert
             Action act = () => _assembler.AssembleLines(lines);
             act.Should().Throw<AssemblerException>()
+                .WithInnerException<TargetInvocationException>()
                .WithInnerException<AssemblerException>()
                .WithMessage("*Instruction STA requires one operand*");
         }
@@ -597,6 +599,7 @@ namespace FSAssemblerTests
             // Act & Assert
             Action act = () => _assembler.AssembleLines(lines);
             act.Should().Throw<AssemblerException>()
+                .WithInnerException<TargetInvocationException>()
                .WithInnerException<AssemblerException>()
                .WithMessage("*requires a register*");
         }
@@ -610,6 +613,7 @@ namespace FSAssemblerTests
             // Act & Assert
             Action act = () => _assembler.AssembleLines(lines);
             act.Should().Throw<AssemblerException>()
+                .WithInnerException<TargetInvocationException>()
                .WithInnerException<AssemblerException>()
                .WithMessage("*Invalid PUSH register*");
         }
@@ -623,6 +627,7 @@ namespace FSAssemblerTests
             // Act & Assert
             Action act = () => _assembler.AssembleLines(lines);
             act.Should().Throw<AssemblerException>()
+                .WithInnerException<TargetInvocationException>()
                .WithInnerException<AssemblerException>()
                .WithMessage("*requires two registers*");
         }
@@ -636,6 +641,7 @@ namespace FSAssemblerTests
             // Act & Assert
             Action act = () => _assembler.AssembleLines(lines);
             act.Should().Throw<AssemblerException>()
+                .WithInnerException<TargetInvocationException>()
                .WithInnerException<AssemblerException>()
                .WithMessage("*Invalid MOV registers*");
         }
@@ -649,6 +655,7 @@ namespace FSAssemblerTests
             // Act & Assert
             Action act = () => _assembler.AssembleLines(lines);
             act.Should().Throw<AssemblerException>()
+                .WithInnerException<TargetInvocationException>()
                .WithInnerException<AssemblerException>()
                .WithMessage("*Invalid SWP registers*");
         }

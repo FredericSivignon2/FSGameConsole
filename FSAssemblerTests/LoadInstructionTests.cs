@@ -1,5 +1,6 @@
-using FSAssembler;
 using FluentAssertions;
+using FSAssembler;
+using System.Reflection;
 
 namespace FSAssemblerTests
 {
@@ -309,6 +310,7 @@ namespace FSAssemblerTests
             // Act & Assert
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
+                .WithInnerException<TargetInvocationException>()
                   .WithInnerException<AssemblerException>()
                   .WithMessage("*requires one operand*");
         }
@@ -333,6 +335,7 @@ namespace FSAssemblerTests
             // Act & Assert
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
+                .WithInnerException<TargetInvocationException>()
                   .WithInnerException<OverflowException>();
         }
 
@@ -345,6 +348,7 @@ namespace FSAssemblerTests
             // Act & Assert
             var action = () => _assembler.AssembleLines(lines);
             action.Should().Throw<AssemblerException>()
+                .WithInnerException<TargetInvocationException>()
                  .WithInnerException<OverflowException>();
         }
 
